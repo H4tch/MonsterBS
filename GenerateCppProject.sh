@@ -45,9 +45,17 @@ done
 
 
 if [ $NEW_PROJECT -eq 1 ]; then
+	if [ -d "../Project/" ]; then
+		echo "--> Copying Project files to new project."
+		cp -a "../Project/*" .
+	fi
 	if [ -d "../$SRCDIR/" ]; then
-		echo "Copying over SRC files to new project."
+		echo "--> Copying SRC files to new project."
 		cp -a "../$SRCDIR/" .
+	fi
+	if [ -d "../$DATADIR/" ]; then
+		echo "--> Copying DATA files to new project."
+		cp -a "../$DATADIR/" .
 	fi
 fi
 
@@ -57,7 +65,7 @@ RemoveFile()
 	if [ $# -lt 1 ]; then
 		exit 1
 	fi
-	rm $SCRIPTDIR/$1
+	rm $SCRIPTDIR/$1 > /dev/null 2>&1
 	FILES=`echo $FILES | sed -e s/$1//g`
 }
 
@@ -142,7 +150,6 @@ if [ $BUILD_FOR_ANDROID -eq 0 ]; then
 	RemoveFile Makefile.Android
 	RemoveFile SetupAndroidProject.sh
 fi
-
 
 
 
@@ -247,6 +254,15 @@ Replace "HIDE_DOC_WITH_SYMBOLS" "$HIDE_DOC_WITH_SYMBOLS"
 Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 
+mv $SCRIPTDIR/Makefile .
+mv $SCRIPTDIR/Doxyfile .
+# Remove files from $FILES variable.
+RemoveFile Makefile
+RemoveFile Doxyfile
+
+
+
+
 
 cd ../
 
@@ -264,7 +280,7 @@ OS=`uname -s`
 ARCH=`uname -m`
 
 
-InstallSDLPackages()
+InstallSDLLibraries()
 {
 INSTALL_PACKAGE="n"
 if [ "$OS" = "Linux" ]; then
@@ -273,7 +289,7 @@ if [ "$OS" = "Linux" ]; then
 	cat "/etc/lsb-release" | grep "Ubuntu" > /dev/null
 	if [ $? -eq 0 ]; then DEBIAN=1; fi
 	if [ $DEBIAN -eq 1 ]; then
-		echo "Would you like to install using the package manager? y/n "
+		echo "--> Would you like to install using the package manager? y/n "
 		read INSTALL_PACKAGE
 		if [ "$INSTALL_PACKAGE" = "y" ]; then
 			for LIB in $LIBS; do
@@ -295,34 +311,76 @@ return 0
 }
 
 
-CORES=`grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu`
+BuildAndInstallSDLLibraries()
+{
+	CORES=`grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu`
+	#if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux32; fi
+	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux64; fi
+	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac32; fi
+	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac64; fi
+}
+
+
+GetInstalledSDLLibrariesFromSystem()
+{
+	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2*; fi
+	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2*; fi
+	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then ; fi
+	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then ; fi
+}
+
+
+DownloadWindowsMinGWSDLLibraries()
+{
+	if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
+		echo "Should I download and install MinGW SDL2 libraries? y/n"
+		read DOWNLOAD_MINGW_LIBS
+	fi
+	if [ "$DOWNLOAD_MINGW_LIBS" != "y" ]; then return 1; fi
+	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows32; fi
+	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows64; fi
+}
+
 
 ## Detect SDL2 Libraries.
 echo $LIBS | grep "\-lSDL2 " > /dev/null
 if [ $? -eq 0 ]; then
-	echo "Your project is using SDL2 libs."
-	InstallSDLPackages
+	echo "--> Your project is using the SDL2 library."
+	InstallSDLLibraries
 	if [ $? -ne 0 ]; then
-		echo "Failed to install SDL libs through package manager."
-		echo "Would you like to download and compile the SDL libs? y/n"
+		echo "--> Failed to install SDL libs through package manager."
+		echo "--> Would you like to download and compile the SDL libs? y/n"
 		read COMPILE_LIBS
+		if [ "$COMPILE_LIBS" = "y" ]; then
+			BuildAndInstallSDLLibraries
+		else
+			echo "--> Should I grab SDL2 libraries from the System? y/n"
+			read GRAB_SYS_LIBS
+			if [ "$GRAB_SYS_LIBS" = "y" ]; then
+				GetInstalledSDLLibrariesFromSystem
+			fi
+		fi
 	fi
+	DownloadWindowsMinGWSDLLibraries
+fi
 
 
-	if [ "$COMPILE_LIBS" = "y" ]; then
-		#if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux32; fi
-		if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux64; fi
-		#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac32; fi
-		#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac64; fi
-		if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows32; fi
-		if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows64; fi
+
+if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
+	echo "--> Getting libwinpthread.dll for running MinGW applications."
+	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
+		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll $LIBDIR/Windows_x86/
+	fi
+	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
+		echo "--> Getting libwinpthread.dll for running MinGW_64 applications."
+		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll $LIBDIR/Windows_x86_64/
 	fi
 fi
 
 
-if [ -d "../$LIBDIR/" ]; then
-	echo "Copying LIB files to project."
-	cp -a "../$LIBDIR/" .
+if [ -d "$LIBDIR/" ]; then
+	echo "--> Copying LIB files to project."
+	cp -a "$LIBDIR/" "$NAME/"
 fi
 
 

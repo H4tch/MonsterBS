@@ -4,8 +4,9 @@
 ##
 ## Cross-Platform Makefile for Mac/Linux.
 ## 
-## Supported OS values are: Windows_NT, Windows, Linux, and Darwin (osx).
-## Supported ARCH values are: x86, x86_64, arm (compiler not implemented).
+## Cross-Compilation Support:
+## 	Supported OS values are: Windows_NT, Windows, Linux, and Darwin (osx).
+## 	Supported ARCH values are: x86, x86_64, arm(not implemented).
 ## 	Note: These will be automatically determined if not set.
 ## 
 ## Make Commands:
@@ -20,9 +21,18 @@
 ##	make cleanAll - Remove the build directory completely.
 ## 
 
- 
+  
 ## TODO:
-##	Make BUILDDIR configurable.
+## 	Move OS and ARCH detection to another Makefile that is included.
+## http://www.gnu.org/software/make/manual/make.html#Directory-Variables
+##	DESTDIR
+## 	make dist
+## 	make install, prefix, exec-prefix, /usr/local
+## 	make uninstall
+##	datarootdir, /usr/local/share, architecture independent data
+##	datadir, typically same as datarootdir
+## 	includedir,	/usr/local/include/ where to install header files 
+## 	Ability for user to override variables.
 ##	Metadata for built packages. Include $$ICON
 ##	Look into NSIS for a Windows installer. 
 ##	Add optimization options to compiler for "release" builds.
@@ -47,24 +57,57 @@ DATA	= $$DATADIR
 EXT		= # Set to '.exe' on Windows. I might set to '.bin' for Unixes.
 SRC 	= $$SRCDIR
 ifeq ($(BUILDDIR),)
-	BUILDDIR= $$BUILDDIR
+	BUILDDIR = $$BUILDDIR
 endif
 LIBDIR		= $$LIBDIR
 SYSTEM		= $(OS)_$(ARCH)
 CC  		= g++
 CCFLAGS		= $$CCFLAGS
 LDFLAGS		= $$LDFLAGS
+FLAGS_DEBUG = $$FLAGS_DEBUG
+FLAGS_RELEASE = $$FLAGS_RELEASE
 INCLUDES	= $$INCLUDES
 LIBS 		= $$LIBS #+= $(foreach library,"$$LIBS",-l$(library))
 STATICLIBS 	= $$STATICLIBS
 WINLIBS		= $$WINLIBS 
 STATICWINLIBS= $$STATICWINLIBS
 DEFINES		= -DDATE='"'$$DATE'"'
+DEFINES_DEBUG = $$DEFINES_DEBUG
+DEFINES_RELEASE = $$DEFINES_RELEASE
+
+
+
+## DEBUG AND RELEASE OPTIONS
+RELEASE = 0
+ifneq ($(filter release, $(MAKECMDGOALS)),)
+	RELEASE = 1
+	CCFLAGS := $(FLAGS_RELEASE) $(CCFLAGS)
+	LDFLAGS := $(FLAGS_RELEASE) $(LDFLAGS)
+	DEFINES := $(DEFINES_RELEASE) $(DEFINES)
+	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT)
+	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM).release
+else
+	CCFLAGS := $(FLAGS_DEBUG) $(CCFLAGS)
+	LDFLAGS := $(FLAGS_DEBUG) $(LDFLAGS)
+	DEFINES := $(DEFINES_DEBUG) $(DEFINES)
+	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM).debug$(EXT)
+	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM).debug
+endif
+
 
 
 #OSS 	= "Linux Mac Windows"
 #ARCHS	= "arm x86 x86_64"
  
+
+# TODO
+SHELL = /bin/sh
+INSTALL = install
+INSTALL_PROGRAM=INSTALL
+INSTALL_DATA = $(INSTALL) -m 644
+# install and uninstall rules
+DESTDIR = /usr/share/
+
 
 #### BEGIN SECTION FOR DETECTING AND FIXING UP ARCH ####
 # NOTE: WINDOWS ARCH VALUES CAN BE: AMD64 IA64 x86
@@ -179,35 +222,37 @@ endif
 
 SOURCES	:= $$SOURCES	
 
-OBJECTS	:= $(SOURCES:.cpp=.o)
+OBJECTS	:= $(patsubst $(SRC)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
 
-BUILD_DEBUG	:= $(patsubst $(SRC)/%,$(BUILDDIR)/$(SYSTEM).debug/%,$(OBJECTS))
-BUILD_RELEASE:= $(patsubst $(SRC)/%,$(BUILDDIR)/$(SYSTEM).release/%,$(OBJECTS))
-
+DEPENDENCIES = $(OBJECTS:.o=.deps)
 
 
 all: debug
 
+debug: init initDebug $(OUTPUT)
 
-debug: init initDebug $(BUILD_DEBUG)
-	$(CC) $$FLAGS_DEBUG $(STATICLIBS) $(LDFLAGS) $(BUILD_DEBUG) \
-		-o $(BUILDDIR)/$(BIN)_$(SYSTEM).debug$(EXT) $(LIBS)
-	cp $(BUILDDIR)/$(BIN)_$(SYSTEM).debug$(EXT) $(BIN)$(EXT)
+release: init initRelease $(OUTPUT)
+
+$(OUTPUT): $(OBJECTS)
+	$(CC) $(STATICLIBS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
+	cp $(OUTPUT) $(BIN)$(EXT)
+
+include $(DEPENDENCIES)
+
+$(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRC)/%.cpp
+	$(CC) $(CCFLAGS) $(DEFINES) $< -o $@ $(INCLUDES)
+
+# TODO: CCFLAGS (can't since it has the '-c' compiler option?)
+$(DEPENDENCIES) : $(OUTPUTDIR)/%.deps: $(SRC)/%.cpp
+	-@if [ $(RELEASE) -eq 1 ]; then \
+		mkdir -p $(BUILDDIR)/$(SYSTEM).release; \
+	else mkdir -p $(BUILDDIR)/$(SYSTEM).debug; \
+	fi
+	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
+		sed -e "s@$*.o:@$(OUTPUTDIR)/$*.o $(OUTPUTDIR)/$*.deps:@g" > $@
 
 
-$(BUILD_DEBUG) : $(BUILDDIR)/$(SYSTEM).debug/%.o: $(SRC)/%.cpp
-	$(CC) $$FLAGS_DEBUG $(CCFLAGS) $$DEFINES_DEBUG $(DEFINES) $< -o $@ $(INCLUDES)
-
-
-release: init initRelease $(BUILD_RELEASE)
-	$(CC) $$FLAGS_RELEASE $(STATICLIBS) $(LDFLAGS) $(BUILD_RELEASE) \
-		-o $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT) $(LIBS)
-	cp $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT) $(BIN)$(EXT)
-
-
-$(BUILD_RELEASE) : $(BUILDDIR)/$(SYSTEM).release/%.o: $(SRC)/%.cpp
-	$(CC) $$FLAGS_RELEASE $(CCFLAGS) $$DEFINES_RELEASE $(DEFINES) $< -o $@ $(INCLUDES)
-
+dist: package
 
 package: cleanDebug
 	mkdir -p $(PACKAGEDIR)/$(LIBDIR)/
@@ -235,10 +280,8 @@ package: cleanDebug
 init:
 	#mkdir -p $(LIBDIR)/$(SYSTEM)/
 
-
 initDebug:
 	mkdir -p $(BUILDDIR)/$(SYSTEM).debug
-
 
 initRelease:
 	mkdir -p $(BUILDDIR)/$(SYSTEM).release
@@ -251,15 +294,17 @@ clean:
 	-@rm $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT) > /dev/null 2>&1
 	-@rmdir $(BUILDDIR)/ > /dev/null 2>&1
 
-
 cleanDebug:
 	-@rm -rf $(BUILDDIR)/*.debug
 	-@rm $(BUILDDIR)/*.debug*
 
-
+# TODO: Rename to distclean?
 cleanAll:
 	-@rm -r $(BUILDDIR) > /dev/null 2>&1
 
+docs:
+	mkdir -p $$DOCDIR
+	(cat Doxyfile ; echo INPUT="$$PWD/src") | doxygen -
 
 
 .PHONY: all
@@ -268,10 +313,14 @@ cleanAll:
 .PHONY: package
 .PHONY: packageLinux
 .PHONY: packageWindows
+.PHONY: dist
 .PHONY: init
 .PHONY: initDebug
 .PHONY: initRelease
+.PHONY: install
+.PHONY: uninstall
 .PHONY: clean
 .PHONY: cleanDebug
 .PHONY: cleanAll
+
 

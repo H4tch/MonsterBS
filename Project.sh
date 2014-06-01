@@ -6,10 +6,15 @@
 ## be injected into. For example, the SYSTEM variable is determined when the
 ## Makefile is invoked, or the output application is run from script. In these
 ## cases, the variable is derefernced with the literal "$". 
-## TODO: Note, Makefiles use a different syntax for dereferencing variables.
-## 
 
-## TODO: Need escaping syntax. Probably use \$\$.
+## TODO
+## Ability to create a suite of projects that share common values. This would be
+##	useful for companies, libraries that are under an unmbrella project, or
+##	projects you want to be built to the same location or built together. 
+##	This would also be good to tie into the Application/Library thing???
+## 	The Project files are contained in the root directory of the project.  
+## Ability to inject additional rules into the Makefile.
+## Automatic prefixing for source files, libs, etc.
 
 #### Metadata ####
 
@@ -21,11 +26,14 @@ FILENAME=$NAME
 VERSION="1.0"
 ICON="icon.png"
 DESCRIPTION=""
+# TODO: Need ability to specify Application, SharedLibrary, StaticLibrary. HeaderLibrary
+#PROJECT_TYPE="Application"
 # Unix Desktop Launcher file settings.
 # http://standards.freedesktop.org/menu-spec/latest/apa.html
 CATEGORIES="Game;ActionGame;RolePlaying"
 RUN_IN_TERMINAL=false
-#TODO: Support Actions. http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#extra-actions
+#TODO: Support Actions.
+# http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#extra-actions
 
 
 #### Directories ####
@@ -36,9 +44,9 @@ LIBDIR="lib"
 #PLATFORM_LIBDIR=$LIBDIR"/\$OS\"_\"\$ARCH"
 # Place where the main '.h' source files are.
 #PROJ_INCLUDEDIR=$SRCDIR"/include"
-INCLUDEDIR="include" # TODO What is this good for??
-# TODO: This can be overriden before compilation by exporting it to a different value.
+INCLUDEDIR="include" # TODO What is this good for?? Compiliation vs Installation...
 BUILDDIR="build"
+# Docdir Who?
 DOCDIR="doc"
 DATADIR="data"
 
@@ -96,7 +104,7 @@ WINDOWS_CC_64="x86_64-w64-mingw32-g++"
 
 
 #### PACKAGING ####
-
+# TODO This is not yet supported.
 # Should a Package containing all platforms be created?
 #PACKAGE_ALL_IN_ONE=0
 
