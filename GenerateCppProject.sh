@@ -151,6 +151,25 @@ if [ $BUILD_FOR_ANDROID -eq 0 ]; then
 	RemoveFile SetupAndroidProject.sh
 fi
 
+if [ $PROJECT_TYPE != "Application" ]; then
+	RemoveFile LaunchOnLinux.sh
+	RemoveFile LaunchOnWindows.bat
+	RemoveFile Installer.nsh
+	RemoveFile GenerateLinuxLauncher.sh
+fi
+
+if [ $PROJECT_TYPE != "Framework" ]; then
+	RemoveFile MasterProject.mk
+fi
+
+echo $LIBS | grep "\-lSDL2 " > /dev/null
+DEPENDS_SDL2=0
+if [ $? -eq 0 ]; then
+	DEPENDS_SDL2=1
+	RemoveFile SDL2Libs.mk
+	RemoveFile Fix_Ubuntu_SDL2_32-bit_Libs.sh
+fi
+
 
 
 Replace()
@@ -197,6 +216,7 @@ Replace "INCLUDEDIR" "$INCLUDEDIR"
 Replace "BUILDDIR" "$BUILDDIR"
 Replace "DOCDIR" "$DOCDIR"
 Replace "DATADIR" "$DATADIR"
+Replace "THIRDPARTYDIR" "$THIRDPARTYDIR"
 Replace "SCRIPTDIR" "$SCRIPTDIR"
 
 Replace "SOURCES" "$SOURCES"
@@ -212,13 +232,19 @@ Replace "DEFINES_RELEASE" "$DEFINES_RELEASE"
 Replace "DEFINES_32" "$DEFINES_32"
 Replace "DEFINES_64" "$DEFINES_64"
 Replace "DEFINES_ARM" "$DEFINES_ARM"
-Replace "DEFINES" "$DEFINES"
+Replace "DEFINES" "$DEFINES" # Don't move this up.
 Replace "LINUXDEFINES" "$LINUXDEFINES"
 Replace "MACDEFINES" "$MACDEFINES"
 Replace "WINDEFINES" "$WINDEFINES"
 
 Replace "CCFLAGS" "$CCFLAGS"
 Replace "LDFLAGS" "$LDFLAGS"
+Replace "LIBFLAGS" "$LIBFLAGS"
+Replace "LIBFLAGS_LINUX" "$LIBFLAGS_LINUX"
+Replace "LIBFLAGS_MAC" "$LIBFLAGS_MAC"
+Replace "LIBFLAGS_WINDOWS" "$LIBFLAGS_WINDOWS"
+Replace "BINFLAGS" "$BINFLAGS"
+Replace "LIBFLAGS" "$LIBFLAGS"
 Replace "FLAGS_DEBUG" "$FLAGS_DEBUG"
 Replace "FLAGS_RELEASE" "$FLAGS_RELEASE"
 
@@ -231,12 +257,32 @@ Replace "BUILD_FOR_ANDROID_ARM" "$BUILD_FOR_ANDROID_ARM"
 Replace "BUILD_FOR_ANDROID_X86" "$BUILD_FOR_ANDROID_X86"
 
 
+Replace "LINUX_CC_PREFIX_32" "$LINUX_CC_PREFIX_32"
+Replace "LINUX_CC_PREFIX_64" "$LINUX_CC_PREFIX_64"
+Replace "MAC_CC_PREFIX_32" "$MAC_CC_PREFIX_32"
+Replace "MAC_CC_PREFIX_64" "$MAC_CC_PREFIX_64"
+Replace "WINDOWS_CC_PREFIX_32" "$WINDOWS_CC_PREFIX_32"
+Replace "WINDOWS_CC_PREFIX_64" "$WINDOWS_CC_PREFIX_64"
+
 Replace "LINUX_CC_32" "$LINUX_CC_32"
 Replace "LINUX_CC_64" "$LINUX_CC_64"
 Replace "MAC_CC_32" "$MAC_CC_32"
 Replace "MAC_CC_64" "$MAC_CC_64"
 Replace "WINDOWS_CC_32" "$WINDOWS_CC_32"
 Replace "WINDOWS_CC_64" "$WINDOWS_CC_64"
+Replace "LINUX_CC_ARM" "$LINUX_CC_ARM"
+Replace "MAC_CC_ARM" "$MAC_CC_ARM"
+Replace "WINDOWS_CC_ARM" "$WINDOWS_CC_ARM"
+
+Replace "LINUX_AR_32" "$LINUX_AR_32"
+Replace "LINUX_AR_64" "$LINUX_AR_64"
+Replace "MAC_AR_32" "$MAC_AR_32"
+Replace "MAC_AR_64" "$MAC_AR_64"
+Replace "WINDOWS_AR_32" "$WINDOWS_AR_32"
+Replace "WINDOWS_AR_64" "$WINDOWS_AR_64"
+Replace "LINUX_AR_ARM" "$LINUX_AR_ARM"
+Replace "MAC_AR_ARM" "$MAC_AR_ARM"
+Replace "WINDOWS_AR_ARM" "$WINDOWS_AR_ARM"
 
 
 #Replace "PACKAGE_ALL_IN_ONE" $PACKAGE_ALL_IN_ONE"
@@ -342,9 +388,7 @@ DownloadWindowsMinGWSDLLibraries()
 }
 
 
-## Detect SDL2 Libraries.
-echo $LIBS | grep "\-lSDL2 " > /dev/null
-if [ $? -eq 0 ]; then
+if [ $DEPENDS_SDL2 -eq 1 ]; then
 	echo "--> Your project is using the SDL2 library."
 	InstallSDLLibraries
 	if [ $? -ne 0 ]; then

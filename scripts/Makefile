@@ -55,23 +55,26 @@ VERSION	= $$VERSION
 PACKAGEDIR = $(BUILDDIR)/$(NAME)_$(VERSION)
 DATA	= $$DATADIR
 EXT		= # Set to '.exe' on Windows. I might set to '.bin' for Unixes.
+LIBEXT	= .so # Set to '.dll', '.dylib', '.so', or '.a'.
 SRC 	= $$SRCDIR
 ifeq ($(BUILDDIR),)
 	BUILDDIR = $$BUILDDIR
 endif
 LIBDIR		= $$LIBDIR
+THIRDPARTYDIR = $$THIRDPARTYDIR
 SYSTEM		= $(OS)_$(ARCH)
 CC  		= g++
 CCFLAGS		= $$CCFLAGS
 LDFLAGS		= $$LDFLAGS
+LIBFLAGS	= $$LIBFLAGS
 FLAGS_DEBUG = $$FLAGS_DEBUG
 FLAGS_RELEASE = $$FLAGS_RELEASE
 INCLUDES	= $$INCLUDES
-LIBS 		= $$LIBS #+= $(foreach library,"$$LIBS",-l$(library))
+LIBS 		= $$LIBS #+= $(foreach library,$(LIBS),-l$(library))
 STATICLIBS 	= $$STATICLIBS
 WINLIBS		= $$WINLIBS 
 STATICWINLIBS= $$STATICWINLIBS
-DEFINES		= -DDATE='"'$$DATE'"'
+DEFINES		= -DDATE='"'$$DATE'"' $$DEFINES
 DEFINES_DEBUG = $$DEFINES_DEBUG
 DEFINES_RELEASE = $$DEFINES_RELEASE
 
@@ -175,13 +178,19 @@ endif
 
 ifeq ($(OS),Windows)
 	EXT 	:= .exe
+	LIBEXT 	:= .dll
 	LIBS 	:= $(WINLIBS) $(LIBS)
 	STATICLIBS += $(STATICWINLIBS)
 	DEFINES += $$WINDEFINES
+	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_WINDOWS
 else ifeq ($(OS),Linux)
 	DEFINES += $$LINUXDEFINES
+	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_LINUX
 else ifeq ($(OS), Darwin)
+	OS = Mac
+	LIBEXT := .dylib
 	DEFINES += $$MACDEFINES
+	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_MAC
 else
 endif
 
@@ -190,30 +199,39 @@ ifeq ($(ARCH),x86_64)
 	DEFINES += $$DEFINES_64
 	ifeq ($(OS), Windows)
 		CC = $$WINDOWS_CC_64
+		AR = $$WINDOWS_AR_64
 	else ifeq ($(OS), Mac)
 		CC = $$MAC_CC_64
+		AR = $$MAC_AR_64
 	else
 		CC = $$LINUX_CC_64
+		AR = $$LINUX_AR_64
 	endif
 else ifeq ($(ARCH),x86)
 	BITS = 32
 	DEFINES += $$DEFINES_32
 	ifeq ($(OS), Windows)
 		CC = $$WINDOWS_CC_32
+		AR = $$WINDOWS_AR_32
 	else ifeq ($(OS), Mac)
 		CC = $$MAC_CC_32
+		AR = $$MAC_AR_32
 	else
 		CC = $$LINUX_CC_32
+		AR = $$LINUX_AR_32
 	endif
 else ifeq ($(ARCH),arm)
 	BITS = 32
 	DEFINES += $$DEFINES_ARM
 	ifeq ($(OS), Windows)
 		CC = $$WINDOWS_CC_ARM
+		AR = $$WINDOWS_AR_ARM
 	else ifeq ($(OS), Mac)
 		CC = $$MAC_CC_ARM
+		AR = $$MAC_AR_ARM
 	else
 		CC = $$LINUX_CC_ARM
+		AR = $$LINUX_AR_ARM
 	endif
 endif
 #### DONE SETTING UP VARIABLES AND COMPILER FLAGS ####
@@ -226,18 +244,17 @@ OBJECTS	:= $(patsubst $(SRC)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
 
 DEPENDENCIES = $(OBJECTS:.o=.deps)
 
-
 all: debug
 
-debug: init initDebug $(OUTPUT)
+debug: init $(OUTPUT)
 
-release: init initRelease $(OUTPUT)
+release: init $(OUTPUT)
 
 $(OUTPUT): $(OBJECTS)
 	$(CC) $(STATICLIBS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
 	cp $(OUTPUT) $(BIN)$(EXT)
 
-include $(DEPENDENCIES)
+#include $(DEPENDENCIES)
 
 $(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRC)/%.cpp
 	$(CC) $(CCFLAGS) $(DEFINES) $< -o $@ $(INCLUDES)
@@ -250,6 +267,16 @@ $(DEPENDENCIES) : $(OUTPUTDIR)/%.deps: $(SRC)/%.cpp
 	fi
 	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
 		sed -e "s@$*.o:@$(OUTPUTDIR)/$*.o $(OUTPUTDIR)/$*.deps:@g" > $@
+
+
+shared: $(OBJECTS)
+	$(CC) $(LDFLAGS) $(LIBFLAGS) -o lib$(NAME)$(LIBEXT) $(OBJECTS)
+
+static: $(OBJECTS)
+	if [ $(OS) = "Linux" ]; then LIBEXT=".a"; fi; \
+	if [ $(OS) = "Mac" ]; then LIBEXT=".a"; fi; \
+	echo $$LIBEXT; \
+	$(AR) rcs lib$(NAME)$(LIBEXT) $(OBJECTS)
 
 
 dist: package
@@ -274,18 +301,17 @@ package: cleanDebug
 	done
 	-@rm $(NAME)_$(VERSION).zip
 	-cd $(BUILDDIR)/ && \
-	zip -r ../$(NAME)_$(VERSION).zip $(NAME)_$(VERSION)/;	
+	zip -r ../$(NAME)_$(VERSION).zip $(NAME)_$(VERSION)/;
 
 
 init:
-	#mkdir -p $(LIBDIR)/$(SYSTEM)/
-
-initDebug:
-	mkdir -p $(BUILDDIR)/$(SYSTEM).debug
-
-initRelease:
-	mkdir -p $(BUILDDIR)/$(SYSTEM).release
-
+	mkdir -p $(OUTPUTDIR)
+	for SOURCE in $(SOURCES); do \
+		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
+		mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR; \
+	done
+	cp -a $(OUTPUTDIR)/$(SRC)/* $(OUTPUTDIR)/
+	rm -rd $(OUTPUTDIR)/$(SRC)
 
 clean:
 	-@rm -rf $(BUILDDIR)/$(SYSTEM).debug/ > /dev/null 2>&1
@@ -304,19 +330,19 @@ cleanAll:
 
 docs:
 	mkdir -p $$DOCDIR
-	(cat Doxyfile ; echo INPUT="$$PWD/src") | doxygen -
+	(cat Doxyfile ; echo INPUT="$$PWD/$(SRC)") | doxygen -
 
 
 .PHONY: all
 .PHONY: debug
 .PHONY: release
+.PHONY: shared
+.PHONY: static
 .PHONY: package
 .PHONY: packageLinux
 .PHONY: packageWindows
 .PHONY: dist
 .PHONY: init
-.PHONY: initDebug
-.PHONY: initRelease
 .PHONY: install
 .PHONY: uninstall
 .PHONY: clean

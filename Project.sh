@@ -8,6 +8,16 @@
 ## cases, the variable is derefernced with the literal "$". 
 
 ## TODO
+## Project Type. If Library, change the Makefile OUTPUT, ext, and default make target correct. (so, dylib, dll) (what about static?)
+## RELASE Options: -fconserve-space (saves space in the exe)
+## DEBUG Options: 
+## Makefile support for compiling a Library, both static and shared.
+## 	-fvisibility=hidden -fvisibility-inlines-hidden. Probably don't need to hide
+## 	inline functions by default!!!
+## MacOSX should use -dynamiclib instead of -shared for including libraries.
+## Autoinclude directories for includes and libs that are within a "third_party"
+## directory.
+## Create templates, or add to the generation script to be more interactive.
 ## Ability to create a suite of projects that share common values. This would be
 ##	useful for companies, libraries that are under an unmbrella project, or
 ##	projects you want to be built to the same location or built together. 
@@ -26,8 +36,8 @@ FILENAME=$NAME
 VERSION="1.0"
 ICON="icon.png"
 DESCRIPTION=""
-# TODO: Need ability to specify Application, SharedLibrary, StaticLibrary. HeaderLibrary
-#PROJECT_TYPE="Application"
+# TODO: Need ability to specify Application, Library. (Framework (umbrella project))
+PROJECT_TYPE="Application"
 # Unix Desktop Launcher file settings.
 # http://standards.freedesktop.org/menu-spec/latest/apa.html
 CATEGORIES="Game;ActionGame;RolePlaying"
@@ -49,19 +59,23 @@ BUILDDIR="build"
 # Docdir Who?
 DOCDIR="doc"
 DATADIR="data"
-
+THIRDPARTYDIR="third_party"
+SCRIPTDIR="tools
 
 
 #### Source files ####
 
-SOURCES=$SRCDIR/main.cpp
+SOURCES="$SRCDIR/main.cpp"
 
 
 
 #### Build Settings ####
 
+# MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
+
 INCLUDES="-I$INCLUDEDIR -I$SRCDIR"
 ## Note, in some cases, the order of libs do matter.
+# TODO: Need to fix all the escapings.
 LIBS="-L$(LIBDIR)/\$(SYSTEM) -lSDL2 -lSDL2_image -lSDL2_ttf"  #-lGL -lbox2d
 STATICLIBS="-static-libstdc++ -static-libgcc -Wl,-Bstatic"
 WINLIBS="-lmingw32 -lSDL2main" #-lwinpthread -mwindows -lwinmm
@@ -77,8 +91,17 @@ LINUXDEFINES="-DLINUX"
 MACDEFINES="-DOSX"
 WINDEFINES="-DWINDOWS"
 
-CCFLAGS="-c -std=c++0x -Wall -pedantic `sdl2-config --cflags`"
-LDFLAGS="-fuse-ld=gold -Wl,-Bdynamic,-rpath,\$\$ORIGIN/\$(LIBDIR)/\$(SYSTEM)"
+#CCFLAGS="-c -fPIC -std=c++0x -Wall -pedantic `sdl2-config --cflags`"
+CCFLAGS="-c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
+			-fvisibility=hidden -fvisibility-inlines-hidden \
+			-ffunction-sections -fdata-sections"
+LDFLAGS="-fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath,\$\$ORIGIN/\$(LIBDIR)/\$(SYSTEM)"
+LIBFLAGS="--export-dynamic -shared"
+LIBFLAGS_LINUX="-Wl,-soname,lib\$(NAME)\$(LIBEXT)"
+LIBFLAGS_MAC="-dynamiclib -Wl,-dylib-install_name,lib\$(NAME)\$(LIBEXT)"
+LIBFLAGS_WINDOWS="--Wl,-out-implib,lib\$(NAME)\$(LIBEXT).a"
+BINFLAGS=""
+LIBFLAGS=""
 FLAGS_DEBUG="-g"
 FLAGS_RELEASE="" # TODO: Optimizations.
 
@@ -94,13 +117,32 @@ BUILD_FOR_ANDROID_ARM=0 # Not supported yet.
 BUILD_FOR_ANDROID_X86=0 # Not supported yet.
 
 
+LINUX_CC_PREFIX_32=""
+LINUX_CC_PREFIX_64=""
+MAC_CC_PREFIX_32=""
+MAC_CC_PREFIX_64=""
+WINDOWS_CC_PREFIX_32="i686-w64-mingw32"
+WINDOWS_CC_PREFIX_64="x86_64-w64-mingw32"
+
 LINUX_CC_32="g++ -m32"
 LINUX_CC_64="g++ -m64"
 MAC_CC_32="g++ -m32"
 MAC_CC_64="g++ -m64"
-WINDOWS_CC_32="i686-w64-mingw32-g++"
-WINDOWS_CC_64="x86_64-w64-mingw32-g++"
+WINDOWS_CC_32="$WINDOWS_CC_PREFIX_32-g++"
+WINDOWS_CC_64="$WINDOWS_CC_PREFIX_64-g++"
+LINUX_CC_ARM=""
+MAC_CC_ARM=""
+WINDOWS_CC_ARM=""
 
+LINUX_AR_32="ar -m32"
+LINUX_AR_64="ar -m64"
+MAC_AR_32="ar -m32"
+MAC_AR_64="ar -m64"
+WINDOWS_AR_32="$WINDOWS_CC_PREFIX_32-ar"
+WINDOWS_AR_64="$WINDOWS_CC_PREFIX_64-ar"
+LINUX_AR_ARM=""
+MAC_AR_ARM=""
+WINDOWS_AR_ARM=""
 
 
 #### PACKAGING ####
