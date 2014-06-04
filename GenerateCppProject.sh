@@ -11,8 +11,15 @@
 
 
 if [ $# -lt 1 ]; then
-	echo "USAGE: $0 <YourProject.sh>"
+	echo "USAGE: $0 <YourProject.sh> [<target-directory>]"
 	exit 1
+fi
+
+INSTALLDIR=$NAME
+
+if [ $# -ge 2 ]; then
+	echo "Installing to" $2
+	INSTALLDIR=$2
 fi
 
 
@@ -27,17 +34,17 @@ echo "--> Creating Project" $NAME
 
 NEW_PROJECT=0
 
-if [ ! -d "$NAME" ]; then
+if [ ! -d "$INSTALLDIR" ]; then
 	NEW_PROJECT=1
-	mkdir -p $NAME
+	mkdir -p $INSTALLDIR
 fi
 
-cd $NAME
+cd $INSTALLDIR
 mkdir -p $SRCDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
-echo "--> Copying scripts to" $NAME/$SCRIPTDIR
+echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
 
 for FILE in $FILES; do
 	cp -a ../scripts/$FILE $SCRIPTDIR/
@@ -424,7 +431,7 @@ fi
 
 if [ -d "$LIBDIR/" ]; then
 	echo "--> Copying LIB files to project."
-	cp -a "$LIBDIR/" "$NAME/"
+	cp -a "$LIBDIR/" "$INSTALLDIR/"
 fi
 
 
