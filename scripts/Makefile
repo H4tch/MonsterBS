@@ -81,9 +81,7 @@ DEFINES_RELEASE = $$DEFINES_RELEASE
 
 
 ## DEBUG AND RELEASE OPTIONS
-RELEASE = 0
 ifneq ($(filter release, $(MAKECMDGOALS)),)
-	RELEASE = 1
 	CCFLAGS := $(FLAGS_RELEASE) $(CCFLAGS)
 	LDFLAGS := $(FLAGS_RELEASE) $(LDFLAGS)
 	DEFINES := $(DEFINES_RELEASE) $(DEFINES)
@@ -236,7 +234,8 @@ else ifeq ($(ARCH),arm)
 endif
 #### DONE SETTING UP VARIABLES AND COMPILER FLAGS ####
 
-
+#TODO Use this to allow out-of-tree source files.
+VPATH += $(SRC)
 
 SOURCES	:= $$SOURCES	
 
@@ -254,27 +253,33 @@ $(OUTPUT): $(OBJECTS)
 	$(CC) $(STATICLIBS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
 	cp $(OUTPUT) $(BIN)$(EXT)
 
-#include $(DEPENDENCIES)
+init:
+	@mkdir -p $(OUTPUTDIR)
+	@for SOURCE in $(SOURCES); do \
+		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
+		mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR; \
+	done
+	@cp -a $(OUTPUTDIR)/$(SRC)/* $(OUTPUTDIR)/
+	@rm -rd $(OUTPUTDIR)/$(SRC)
 
 $(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRC)/%.cpp
 	$(CC) $(CCFLAGS) $(DEFINES) $< -o $@ $(INCLUDES)
 
-# TODO: CCFLAGS (can't since it has the '-c' compiler option?)
-$(DEPENDENCIES) : $(OUTPUTDIR)/%.deps: $(SRC)/%.cpp
-	-@if [ $(RELEASE) -eq 1 ]; then \
-		mkdir -p $(BUILDDIR)/$(SYSTEM).release; \
-	else mkdir -p $(BUILDDIR)/$(SYSTEM).debug; \
-	fi
-	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
-		sed -e "s@$*.o:@$(OUTPUTDIR)/$*.o $(OUTPUTDIR)/$*.deps:@g" > $@
+-include $(DEPENDENCIES)
 
+# TODO: CCFLAGS (can't since it has the '-c' compiler option?)
+$(DEPENDENCIES): $(OUTPUTDIR)/%.deps: $(SRC)/%.cpp
+	@cd $(SRC); export SRCSUBDIR=`find $*.cpp -printf '%h\n'`; cd ../; \
+	mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR;
+	@export SOURCENAME=`find $< -printf '%f\n' | sed -e 's/.cpp//g'`; \
+	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
+	sed -e "s@$$SOURCENAME.o:@$(OUTPUTDIR)/$*.o $(OUTPUTDIR)/$*.deps:@g" > $@
 
 shared: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(LIBFLAGS) -o lib$(NAME)$(LIBEXT) $(OBJECTS)
 
 static: $(OBJECTS)
-	if [ $(OS) = "Linux" ]; then LIBEXT=".a"; fi; \
-	if [ $(OS) = "Mac" ]; then LIBEXT=".a"; fi; \
+	if [ $(OS) = "Linux" ] || [ $(OS) = "Mac" ]; then LIBEXT=".a"; fi; \
 	$(AR) rcs lib$(NAME)$$LIBEXT $(OBJECTS)
 
 
@@ -303,14 +308,6 @@ package: cleanDebug
 	zip -r ../$(NAME)_$(VERSION).zip $(NAME)_$(VERSION)/;
 
 
-init:
-	mkdir -p $(OUTPUTDIR)
-	for SOURCE in $(SOURCES); do \
-		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
-		mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR; \
-	done
-	cp -a $(OUTPUTDIR)/$(SRC)/* $(OUTPUTDIR)/
-	rm -rd $(OUTPUTDIR)/$(SRC)
 
 clean:
 	-@rm -rf $(BUILDDIR)/$(SYSTEM).debug/ > /dev/null 2>&1
