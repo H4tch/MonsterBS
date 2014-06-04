@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # TODO
-# Allow script to run from anwhere? You would have to mess around with $0 arg.
+# Allow script to run from anwhere? You would have to mess around with $0 arg. It would need to find the CppProjectBuilder's scripts.
 # Look for ICON and SOURCES within the directory running the script.
 # Fix LaunchOnWindows.bat and LaunchOnLinux.sh to point to correct lib dir.
 # Copy over Scripts.
@@ -15,17 +15,15 @@ if [ $# -lt 1 ]; then
 	exit 1
 fi
 
-INSTALLDIR=$NAME
-
-if [ $# -ge 2 ]; then
-	echo "Installing to" $2
-	INSTALLDIR=$2
-fi
-
 
 # Run the Project script to initialize variables.
 . ./$1
 
+INSTALLDIR=$NAME
+if [ $# -ge 2 ]; then
+	echo "Installing to" $2
+	INSTALLDIR=$2
+fi
 
 
 FILES=`find scripts/ -maxdepth 1 -type f -printf '%f '`
@@ -246,12 +244,11 @@ Replace "WINDEFINES" "$WINDEFINES"
 
 Replace "CCFLAGS" "$CCFLAGS"
 Replace "LDFLAGS" "$LDFLAGS"
-Replace "LIBFLAGS" "$LIBFLAGS"
 Replace "LIBFLAGS_LINUX" "$LIBFLAGS_LINUX"
 Replace "LIBFLAGS_MAC" "$LIBFLAGS_MAC"
 Replace "LIBFLAGS_WINDOWS" "$LIBFLAGS_WINDOWS"
+Replace "LIBFLAGS" "$LIBFLAGS" # Don't move this up.
 Replace "BINFLAGS" "$BINFLAGS"
-Replace "LIBFLAGS" "$LIBFLAGS"
 Replace "FLAGS_DEBUG" "$FLAGS_DEBUG"
 Replace "FLAGS_RELEASE" "$FLAGS_RELEASE"
 
@@ -312,7 +309,6 @@ mv $SCRIPTDIR/Doxyfile .
 # Remove files from $FILES variable.
 RemoveFile Makefile
 RemoveFile Doxyfile
-
 
 
 

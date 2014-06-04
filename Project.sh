@@ -60,7 +60,7 @@ BUILDDIR="build"
 DOCDIR="doc"
 DATADIR="data"
 THIRDPARTYDIR="third_party"
-SCRIPTDIR="tools
+SCRIPTDIR="tools"
 
 
 #### Source files ####
@@ -96,12 +96,11 @@ CCFLAGS="-c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 			-fvisibility=hidden -fvisibility-inlines-hidden \
 			-ffunction-sections -fdata-sections"
 LDFLAGS="-fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath,\$\$ORIGIN/\$(LIBDIR)/\$(SYSTEM)"
-LIBFLAGS="--export-dynamic -shared"
+LIBFLAGS="-export-dynamic -shared"
 LIBFLAGS_LINUX="-Wl,-soname,lib\$(NAME)\$(LIBEXT)"
 LIBFLAGS_MAC="-dynamiclib -Wl,-dylib-install_name,lib\$(NAME)\$(LIBEXT)"
 LIBFLAGS_WINDOWS="--Wl,-out-implib,lib\$(NAME)\$(LIBEXT).a"
 BINFLAGS=""
-LIBFLAGS=""
 FLAGS_DEBUG="-g"
 FLAGS_RELEASE="" # TODO: Optimizations.
 
@@ -134,10 +133,10 @@ LINUX_CC_ARM=""
 MAC_CC_ARM=""
 WINDOWS_CC_ARM=""
 
-LINUX_AR_32="ar -m32"
-LINUX_AR_64="ar -m64"
-MAC_AR_32="ar -m32"
-MAC_AR_64="ar -m64"
+LINUX_AR_32="ar"
+LINUX_AR_64="ar"
+MAC_AR_32="ar"
+MAC_AR_64="ar"
 WINDOWS_AR_32="$WINDOWS_CC_PREFIX_32-ar"
 WINDOWS_AR_64="$WINDOWS_CC_PREFIX_64-ar"
 LINUX_AR_ARM=""

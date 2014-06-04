@@ -182,15 +182,15 @@ ifeq ($(OS),Windows)
 	LIBS 	:= $(WINLIBS) $(LIBS)
 	STATICLIBS += $(STATICWINLIBS)
 	DEFINES += $$WINDEFINES
-	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_WINDOWS
+	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_WINDOWS
 else ifeq ($(OS),Linux)
 	DEFINES += $$LINUXDEFINES
-	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_LINUX
+	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_LINUX
 else ifeq ($(OS), Darwin)
 	OS = Mac
 	LIBEXT := .dylib
 	DEFINES += $$MACDEFINES
-	LIBFLAGS = $(LIBFLAGS) $$LIBFLAGS_MAC
+	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_MAC
 else
 endif
 
@@ -275,8 +275,7 @@ shared: $(OBJECTS)
 static: $(OBJECTS)
 	if [ $(OS) = "Linux" ]; then LIBEXT=".a"; fi; \
 	if [ $(OS) = "Mac" ]; then LIBEXT=".a"; fi; \
-	echo $$LIBEXT; \
-	$(AR) rcs lib$(NAME)$(LIBEXT) $(OBJECTS)
+	$(AR) rcs lib$(NAME)$$LIBEXT $(OBJECTS)
 
 
 dist: package
