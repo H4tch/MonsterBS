@@ -9,8 +9,10 @@ CPPBUILDERPATH=`find $0 -printf '%h\n'`
 SCRIPTS="$CPPBUILDERPATH/tools"
 FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
+USAGE="USAGE: $0 <YourProject.sh> [<target-directory>]"
+
 if [ $# -lt 1 ]; then
-	echo "USAGE: $0 <YourProject.sh> [<target-directory>]"
+	echo $USAGE
 	exit 1
 fi
 
@@ -22,6 +24,19 @@ INSTALLDIR=$NAME
 if [ $# -ge 2 ]; then
 	echo "Installing to" $2
 	INSTALLDIR=$2
+fi
+
+
+# NOTE, this prevents you from embedding CppProjectBuilder into your project's
+# root unless you specifically set the target-directory.
+if [ $# -eq 2 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
+ [ -d $INSTALLDIR ] && [ "$CPPBUILDERPATH" != "./" ]; then
+	# If I'm running the script from the same directory, the project directory
+	# will be created. Otherwise, if the INSTALLDIR is not specified and the
+	# SRCDIR shared the same name as the Project's name, then the current
+	# directory will be treated as the proeject directory.
+	echo "--> Treating current directory as the Project's root directory."
+	INSTALLDIR="."
 fi
 
 
