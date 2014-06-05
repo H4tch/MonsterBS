@@ -76,7 +76,7 @@ SOURCES="$SRCDIR/main.cpp"
 INCLUDES="-I$INCLUDEDIR -I$SRCDIR"
 ## Note, in some cases, the order of libs do matter.
 # TODO: Need to fix all the escapings.
-LIBS="-L$(LIBDIR)/\$(SYSTEM) -lSDL2 -lSDL2_image -lSDL2_ttf"  #-lGL -lbox2d
+LIBS="-L$(LIBDIR)/\$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf"  #-lGL -lbox2d
 STATICLIBS="-static-libstdc++ -static-libgcc -Wl,-Bstatic"
 WINLIBS="-lmingw32 -lSDL2main" #-lwinpthread -mwindows -lwinmm
 STATICWINLIBS=""

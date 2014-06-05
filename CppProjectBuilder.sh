@@ -1,14 +1,13 @@
 #!/bin/sh
 
 # TODO
-# Allow script to run from anwhere? You would have to mess around with $0 arg. It would need to find the CppProjectBuilder's scripts.
 # Look for ICON and SOURCES within the directory running the script.
 # Fix LaunchOnWindows.bat and LaunchOnLinux.sh to point to correct lib dir.
-# Copy over Scripts.
-# Setup Makefile with correct values.
-# Setup Doxygen with corrent values.
 # Generate NSIS file.
 
+CPPBUILDERPATH=`find $0 -printf '%h\n'`
+SCRIPTS="$CPPBUILDERPATH/tools"
+FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
 if [ $# -lt 1 ]; then
 	echo "USAGE: $0 <YourProject.sh> [<target-directory>]"
@@ -26,8 +25,6 @@ if [ $# -ge 2 ]; then
 fi
 
 
-FILES=`find scripts/ -maxdepth 1 -type f -printf '%f '`
-
 echo "--> Creating Project" $NAME
 
 NEW_PROJECT=0
@@ -42,10 +39,15 @@ mkdir -p $SRCDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
+if [ -f "../$CPPBUILDERPATH/$ICON" ]; then
+	echo "--> Copying Icon: '$ICON'."
+	cp ../$CPPBUILDERPATH/$ICON .
+fi
+
 echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
 
 for FILE in $FILES; do
-	cp -a ../scripts/$FILE $SCRIPTDIR/
+	cp -a ../$SCRIPTS/$FILE $SCRIPTDIR/
 done
 
 
@@ -54,7 +56,7 @@ if [ $NEW_PROJECT -eq 1 ]; then
 		echo "--> Copying Project files to new project."
 		cp -a "../Project/*" .
 	fi
-	if [ -d "../$SRCDIR/" ]; then
+	if [ -d "../$SRCDIR/" ] && [ "$SRCDIR" != "$INSTALLDIR" ]; then
 		echo "--> Copying SRC files to new project."
 		cp -a "../$SRCDIR/" .
 	fi
@@ -363,10 +365,10 @@ return 0
 BuildAndInstallSDLLibraries()
 {
 	CORES=`grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu`
-	#if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux32; fi
-	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Linux64; fi
-	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac32; fi
-	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Mac64; fi
+	#if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux32; fi
+	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux64; fi
+	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac32; fi
+	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac64; fi
 }
 
 
@@ -389,8 +391,8 @@ DownloadWindowsMinGWSDLLibraries()
 	fi
 	
 	if [ "$DOWNLOAD_MINGW_LIBS" != "y" ]; then return 1; fi
-	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows32; fi
-	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows64; fi
+	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Windows32; fi
+	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Windows64; fi
 }
 
 
