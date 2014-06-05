@@ -156,14 +156,14 @@ if [ $BUILD_FOR_ANDROID -eq 0 ]; then
 	RemoveFile SetupAndroidProject.sh
 fi
 
-if [ $PROJECT_TYPE != "Application" ]; then
+if [ "$PROJECT_TYPE" != "Application" ]; then
 	RemoveFile LaunchOnLinux.sh
 	RemoveFile LaunchOnWindows.bat
 	RemoveFile Installer.nsh
 	RemoveFile GenerateLinuxLauncher.sh
 fi
 
-if [ $PROJECT_TYPE != "Framework" ]; then
+if [ "$PROJECT_TYPE" != "Framework" ]; then
 	RemoveFile MasterProject.mk
 fi
 
@@ -372,10 +372,12 @@ BuildAndInstallSDLLibraries()
 
 GetInstalledSDLLibrariesFromSystem()
 {
-	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2*; fi
-	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2*; fi
+	cd $INSTALLDIR/$LIBDIR
+	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2* Linux_x86/; fi
+	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2* Linux_x86_64/; fi
 	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then ; fi
 	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then ; fi
+	cd ../../
 }
 
 
@@ -385,6 +387,7 @@ DownloadWindowsMinGWSDLLibraries()
 		echo "Should I download and install MinGW SDL2 libraries? y/n"
 		read DOWNLOAD_MINGW_LIBS
 	fi
+	
 	if [ "$DOWNLOAD_MINGW_LIBS" != "y" ]; then return 1; fi
 	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows32; fi
 	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f scripts/SDL2Libs.mk Windows64; fi
@@ -408,20 +411,26 @@ if [ $DEPENDS_SDL2 -eq 1 ]; then
 			fi
 		fi
 	fi
+	cd $INSTALLDIR/$LIBDIR/
+	cp -a /usr/lib/i386-linux-gnu/libwebp.so.5* Linux_x86/
+	cp -a /usr/lib/x86_64-linux-gnu/libwebp.so.5* Linux_x86_64/
+	cd ../../
 	DownloadWindowsMinGWSDLLibraries
 fi
 
 
 
 if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
+	cd $INSTALLDIR/$LIBDIR/
 	echo "--> Getting libwinpthread.dll for running MinGW applications."
 	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
-		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll $LIBDIR/Windows_x86/
+		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll Windows_x86/
 	fi
 	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
 		echo "--> Getting libwinpthread.dll for running MinGW_64 applications."
-		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll $LIBDIR/Windows_x86_64/
+		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_64/
 	fi
+	cd ../../
 fi
 
 
