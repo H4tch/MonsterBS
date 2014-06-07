@@ -77,7 +77,7 @@ INCLUDES="-I$INCLUDEDIR -I$SRCDIR"
 ## Note, in some cases, the order of libs do matter.
 # TODO: Need to fix all the escapings.
 LIBS="-L$(LIBDIR)/\$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf"  #-lGL -lbox2d
-STATICLIBS="-static-libstdc++ -static-libgcc -Wl,-Bstatic"
+STATICLIBS="-static-libstdc++ -static-libgcc"
 WINLIBS="-lmingw32 -lSDL2main" #-lwinpthread -mwindows -lwinmm
 STATICWINLIBS=""
 
@@ -89,19 +89,19 @@ DEFINES_64="-DX86_64"
 DEFINES_ARM="-DARM"
 LINUXDEFINES="-DLINUX"
 MACDEFINES="-DOSX"
-WINDEFINES="-DWINDOWS"
+WINDEFINES="-DWINDOWS -DWIN32"
 
 #CCFLAGS="-c -fPIC -std=c++0x -Wall -pedantic `sdl2-config --cflags`"
 CCFLAGS="-c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 			-fvisibility=hidden -fvisibility-inlines-hidden \
 			-ffunction-sections -fdata-sections"
-LDFLAGS="-fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath,\$\$ORIGIN/\$(LIBDIR)/\$(SYSTEM)"
+LDFLAGS="-fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath,\$\$ORIGIN/\$(LIBDIR)/\$(SYSTEM)/"
 LIBFLAGS="-export-dynamic -shared"
 LIBFLAGS_LINUX="-Wl,-soname,lib\$(NAME)\$(LIBEXT)"
 LIBFLAGS_MAC="-dynamiclib -Wl,-dylib-install_name,lib\$(NAME)\$(LIBEXT)"
 LIBFLAGS_WINDOWS="--Wl,-out-implib,lib\$(NAME)\$(LIBEXT).a"
 BINFLAGS=""
-FLAGS_DEBUG="-g"
+FLAGS_DEBUG="-g -fno-pie"
 FLAGS_RELEASE="" # TODO: Optimizations.
 
 
