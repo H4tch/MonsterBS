@@ -78,6 +78,8 @@ INCLUDES="-I$INCLUDEDIR -I$SRCDIR"
 # TODO: Need to fix all the escapings.
 LIBS="-L$(LIBDIR)/\$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf"  #-lGL -lbox2d
 STATICLIBS="-static-libstdc++ -static-libgcc"
+LINUXLIBS=""
+STATICLINUXLIBS=""
 WINLIBS="-lmingw32 -lSDL2main" #-lwinpthread -mwindows -lwinmm
 STATICWINLIBS=""
 
