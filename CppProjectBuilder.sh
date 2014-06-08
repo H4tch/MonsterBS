@@ -5,12 +5,17 @@
 # Fix LaunchOnWindows.bat and LaunchOnLinux.sh to point to correct lib dir.
 # Generate NSIS file.
 
-CPPBUILDERPATH=`find $0 -printf '%h\n'`
+PREFIX=$PWD
+CPPBUILDERPATH=$PWD/`find $0 -printf '%h\n'`
+CPPBUILDERPATH=`echo $CPPBUILDERPATH | sed -e s@\\\./@@g`
+
 SCRIPTS="$CPPBUILDERPATH/tools"
 FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
+USAGE="USAGE: $0 <YourProject.sh> [<target-directory>]"
+
 if [ $# -lt 1 ]; then
-	echo "USAGE: $0 <YourProject.sh> [<target-directory>]"
+	echo $USAGE
 	exit 1
 fi
 
@@ -24,6 +29,17 @@ if [ $# -ge 2 ]; then
 	INSTALLDIR=$2
 fi
 
+# NOTE, this prevents you from embedding CppProjectBuilder into your project's
+# root unless you specifically set the target-directory.
+if [ $# -eq 1 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
+ [ -d $INSTALLDIR ] && [ "$CPPBUILDERPATH" != "$PWD/." ]; then
+	# If I'm running the script from the same directory, the project directory
+	# will be created. Otherwise, if the INSTALLDIR is not specified and the
+	# SRCDIR shared the same name as the Project's name, then the current
+	# directory will be treated as the proeject directory.
+	echo "--> Treating current directory as the Project's root directory."
+	INSTALLDIR="."
+fi
 
 echo "--> Creating Project" $NAME
 
@@ -39,30 +55,30 @@ mkdir -p $SRCDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
-if [ -f "../$CPPBUILDERPATH/$ICON" ]; then
+if [ -f "$CPPBUILDERPATH/$ICON" ]; then
 	echo "--> Copying Icon: '$ICON'."
-	cp ../$CPPBUILDERPATH/$ICON .
+	cp $CPPBUILDERPATH/$ICON .
 fi
 
 echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
 
 for FILE in $FILES; do
-	cp -a ../$SCRIPTS/$FILE $SCRIPTDIR/
+	cp -a $SCRIPTS/$FILE $SCRIPTDIR/
 done
 
 
 if [ $NEW_PROJECT -eq 1 ]; then
-	if [ -d "../Project/" ]; then
+	if [ -d "$PREFIX/Project/" ]; then
 		echo "--> Copying Project files to new project."
-		cp -a "../Project/*" .
+		cp -a "$PREFIX/Project/*" .
 	fi
-	if [ -d "../$SRCDIR/" ] && [ "$SRCDIR" != "$INSTALLDIR" ]; then
+	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$INSTALLDIR" ]; then
 		echo "--> Copying SRC files to new project."
-		cp -a "../$SRCDIR/" .
+		cp -a "$PREFIX/$SRCDIR/" .
 	fi
-	if [ -d "../$DATADIR/" ]; then
+	if [ -d "$PREFIX/$DATADIR/" ]; then
 		echo "--> Copying DATA files to new project."
-		cp -a "../$DATADIR/" .
+		cp -a "$PREFIX/$DATADIR/" .
 	fi
 fi
 
@@ -169,10 +185,11 @@ if [ "$PROJECT_TYPE" != "Framework" ]; then
 	RemoveFile MasterProject.mk
 fi
 
-echo $LIBS | grep "\-lSDL2 " > /dev/null
 DEPENDS_SDL2=0
+echo "$LIBS $STATICLIBS $LINUXLIBS $LINUXSTATICLIBS $WINLIBS $WINSTATICLIBS" | grep "\-lSDL2 "
 if [ $? -eq 0 ]; then
 	DEPENDS_SDL2=1
+else
 	RemoveFile SDL2Libs.mk
 	RemoveFile Fix_Ubuntu_SDL2_32-bit_Libs.sh
 fi
@@ -315,7 +332,7 @@ RemoveFile Doxyfile
 
 
 
-cd ../
+cd $PREFIX
 
 
 echo "--> Installing libraries."
@@ -379,7 +396,7 @@ GetInstalledSDLLibrariesFromSystem()
 	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2* Linux_x86_64/; fi
 	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then ; fi
 	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then ; fi
-	cd ../../
+	cd $PREFIX
 }
 
 
@@ -416,7 +433,7 @@ if [ $DEPENDS_SDL2 -eq 1 ]; then
 	cd $INSTALLDIR/$LIBDIR/
 	cp -a /usr/lib/i386-linux-gnu/libwebp.so.5* Linux_x86/
 	cp -a /usr/lib/x86_64-linux-gnu/libwebp.so.5* Linux_x86_64/
-	cd ../../
+	cd $PREFIX
 	DownloadWindowsMinGWSDLLibraries
 fi
 
@@ -432,11 +449,11 @@ if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
 		echo "--> Getting libwinpthread.dll for running MinGW_64 applications."
 		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_64/
 	fi
-	cd ../../
+	cd $PREFIX
 fi
 
 
-if [ -d "$LIBDIR/" ]; then
+if [ -d "$LIBDIR/" ] && [ "$INSTALLDIR" != "." ]; then
 	echo "--> Copying LIB files to project."
 	cp -a "$LIBDIR/" "$INSTALLDIR/"
 fi
