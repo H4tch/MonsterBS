@@ -18,7 +18,9 @@
 ##	make clean - Remove debug and release builds for current OS and ARCH. 
 ##	make cleanDebug - Remove debug build files.
 ##	make cleanAll - Remove the build directory completely.
-## 
+##	make docs - Generate documentation of your source code.
+##	make project - Re-generates project files based $$NAME.mk's variables.
+##	
 
   
 ## TODO:
@@ -48,42 +50,13 @@
 ##	Move compiled Linux binary to bin/lib folder.
 
 
-NAME	= $$NAME
-BIN 	= $$FILENAME
-VERSION	= $$VERSION
+include $$NAME.mk
+export
+
+BIN = $(FILENAME)
 PACKAGEDIR = $(BUILDDIR)/$(NAME)_$(VERSION)
-DATA	= $$DATADIR
-EXT		= # Set to '.exe' on Windows. I might set to '.bin' for Unixes.
-LIBEXT	= .so # Set to '.dll', '.dylib', '.so', or '.a'.
-SRC 	= $$SRCDIR
-ifeq ($(BUILDDIR),)
-	BUILDDIR = $$BUILDDIR
-endif
-LIBDIR		= $$LIBDIR
-THIRDPARTYDIR = $$THIRDPARTYDIR
-SYSTEM		= $(OS)_$(ARCH)
-CC  		= g++
-CCFLAGS		= $$CCFLAGS
-LDFLAGS		= $$LDFLAGS
-LIBFLAGS	= $$LIBFLAGS
-FLAGS_DEBUG = $$FLAGS_DEBUG
-FLAGS_RELEASE = $$FLAGS_RELEASE
-INCLUDES	= $$INCLUDES
-LIBS 		= $$LIBS #+= $(foreach library,$(LIBS),-l$(library))
-STATICLIBS 	= $$STATICLIBS
-WINLIBS		= $$WINLIBS 
-STATICWINLIBS= $$STATICWINLIBS
-LINUXLIBS		= $$LINUXLIBS 
-STATICLINUXLIBS= $$STATICLINUXLIBS
-DEFINES		= -DCOMPILE_DATE=$$DATE $$DEFINES
-DEFINES_DEBUG = $$DEFINES_DEBUG
-DEFINES_RELEASE = $$DEFINES_RELEASE
+DEFINES += -DCOMPILE_DATE=$$DATE
 
-
-
-#OSS 	= "Linux Mac Windows"
-#ARCHS	= "arm x86 x86_64"
- 
 
 # TODO
 SHELL = /bin/sh
@@ -94,158 +67,86 @@ INSTALL_DATA = $(INSTALL) -m 644
 DESTDIR = /usr/share/
 
 
-#### BEGIN SECTION FOR DETECTING AND FIXING UP ARCH ####
-# NOTE: WINDOWS ARCH VALUES CAN BE: AMD64 IA64 x86
-# If we are on Linux cross-compiling to Windows, use Unix tools to find ARCH.
-ifeq ($(ARCH),)
-	ifeq ($(PROCESSOR_ARCHITECTURE),)
-		ARCH := $(shell uname -m)
-	else
-		ARCH := PROCESSOR_ARCHITECTURE
-	endif
-endif
-
-# Better architecture detection on Windows.
-ifneq ($(PROCESSOR_ARCHITEW6432),)
-	PROCESSOR_ARCHITECTURE = $(PROCESSOR_ARCHITEW6432)
-endif
-
-# If not on Windows. Use more advanced methods to fixup ARCH.
-ifeq ($(PROCESSOR_ARCHITECTURE),)
-	ifneq ($(filter x86_64%,$(ARCH)),)
-		ARCH := x86_64
-	else ifneq ($(filter %86,$(ARCH)),)
-		ARCH := x86
-	else ifneq ($(filter %arm,$(ARCH)),)
-		ARCH := arm
-	else ifneq ($(filter arm%,$(ARCH)),)
-		ARCH := arm
-	else ifneq ($(filter %ARM,$(ARCH)),)
-		ARCH := arm
-	else ifneq ($(filter ARM%,$(ARCH)),)
-		ARCH := arm
-	endif
-endif
-
-# Catch other possible ARCH values and correct it. 
-#sed 's/x86_//;s/i[3-6]86/x86/'
-ifeq ($(ARCH),ia32)
-	ARCH := x86
-else ifeq ($(ARCH),IA32)
-	ARCH := x86
-else ifeq ($(ARCH),ia64)
-	ARCH := x86_64
-else ifeq ($(ARCH),IA64)
-	ARCH := x86_64
-else ifeq ($(ARCH),amd64)
-	ARCH := x86_64
-else ifeq ($(ARCH),AMD64)
-	ARCH := x86_64
-else ifeq ($(ARCH),x64)
-	ARCH := x86_64
-else ifeq ($(ARCH),ARM)
-	ARCH := arm
-endif
-#### DONE SETTING UP ARCH ####
-
-
-#### DETECT OS AND SET UP COMPILER AND FLAGS ####
-ifeq ($(OS),)
-	OS := $(shell uname -s)
-endif
-
-ifeq ($(OS),Windows_NT)
-	OS := Windows
-endif
-
-ifeq ($(OS),Windows)
-	EXT 	:= .exe
-	LIBEXT 	:= .dll
-	LIBS 	:= $(WINLIBS) $(LIBS)
-	STATICLIBS += $(STATICWINLIBS)
-	DEFINES += $$WINDEFINES
-	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_WINDOWS
-else ifeq ($(OS),Linux)
-	LIBS 	:= $(LINUXLIBS) $(LIBS)
-	STATICLIBS += $(STATICLINUXLIBS)
-	DEFINES += $$LINUXDEFINES
-	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_LINUX
-else ifeq ($(OS), Darwin)
-	OS = Mac
-	LIBEXT := .dylib
-	DEFINES += $$MACDEFINES
-	LIBFLAGS := $(LIBFLAGS) $$LIBFLAGS_MAC
-else
-endif
-
-ifeq ($(ARCH),x86_64)
-	BITS = 64
-	DEFINES += $$DEFINES_64
-	ifeq ($(OS), Windows)
-		CC = $$WINDOWS_CC_64
-		AR = $$WINDOWS_AR_64
-	else ifeq ($(OS), Mac)
-		CC = $$MAC_CC_64
-		AR = $$MAC_AR_64
-	else
-		CC = $$LINUX_CC_64
-		AR = $$LINUX_AR_64
-	endif
-else ifeq ($(ARCH),x86)
-	BITS = 32
-	DEFINES += $$DEFINES_32
-	ifeq ($(OS), Windows)
-		CC = $$WINDOWS_CC_32
-		AR = $$WINDOWS_AR_32
-	else ifeq ($(OS), Mac)
-		CC = $$MAC_CC_32
-		AR = $$MAC_AR_32
-	else
-		CC = $$LINUX_CC_32
-		AR = $$LINUX_AR_32
-	endif
-else ifeq ($(ARCH),arm)
-	BITS = 32
-	DEFINES += $$DEFINES_ARM
-	ifeq ($(OS), Windows)
-		CC = $$WINDOWS_CC_ARM
-		AR = $$WINDOWS_AR_ARM
-	else ifeq ($(OS), Mac)
-		CC = $$MAC_CC_ARM
-		AR = $$MAC_AR_ARM
-	else
-		CC = $$LINUX_CC_ARM
-		AR = $$LINUX_AR_ARM
-	endif
-endif
-#### DONE SETTING UP VARIABLES AND COMPILER FLAGS ####
-
-
+include $(SCRIPTDIR)/platform.mk
+export
 
 ## DEBUG AND RELEASE OPTIONS
 ifneq ($(filter release, $(MAKECMDGOALS)),)
-	CCFLAGS := $(FLAGS_RELEASE) $(CCFLAGS)
-	LDFLAGS := $(FLAGS_RELEASE) $(LDFLAGS)
-	DEFINES := $(DEFINES_RELEASE) $(DEFINES)
+	#TODO Optimizations. -O2
+	CCFLAGS := $(CCFLAGS)
+	LDFLAGS := $(LDFLAGS)
+	DEFINES := -DNDEBUG $(DEFINES)
 	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT)
 	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM).release
 else
-	CCFLAGS := $(FLAGS_DEBUG) $(CCFLAGS)
-	LDFLAGS := $(FLAGS_DEBUG) $(LDFLAGS)
-	DEFINES := $(DEFINES_DEBUG) $(DEFINES)
+	CCFLAGS := -g -fno-pie $(CCFLAGS)
+	LDFLAGS := -g -fno-pie $(LDFLAGS)
+	DEFINES := -DDEBUG $(DEFINES)
 	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM).debug$(EXT)
 	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM).debug
 endif
 
 
+ifeq ($(OS),Windows)
+	EXT := .exe
+	LIBEXT := .dll
+	LIBS := $(LIBS) -lmingw32 #-lwinpthread -mwindows -lwinmm
+	STATICLIBS := $(STATICLIBS)
+	DEFINES := $(DEFINES) -DWINDOWS -DWIN32
+	LIBFLAGS := $(LIBFLAGS) -Wl,-out-implib,lib$(NAME)$(LIBEXT).a
+else ifeq ($(OS), Mac)
+	EXT := 
+	LIBEXT := .dylib
+	LIBS := $(LIBS) -ldl
+	STATICLIBS := $(STATICLIBS)
+	DEFINES := $(DEFINES) -DOSX
+	LIBFLAGS := $(LIBFLAGS) -dynamiclib -Wl,-dylib-install_name,lib$(NAME)$(LIBEXT)
+else #ifeq ($(OS),Linux)
+	EXT := 
+	LIBEXT := .so
+	LIBS := $(LIBS) -ldl
+	STATICLIBS := $(STATICLIBS)
+	DEFINES := $(DEFINES) -DLINUX
+	LIBFLAGS := $(LIBFLAGS) -Wl,-soname,lib$(NAME)$(LIBEXT)
+endif
+
+
+AR = ar
+WINDOWS_CC_PREFIX_32 = i686-w64-mingw32
+WINDOWS_CC_PREFIX_64 = x86_64-w64-mingw32
+
+ifeq ($(ARCH), x86_64)
+	DEFINES := $(DEFINES) -DX86_64
+	ifeq ($(OS), Windows)
+		CC = $(WINDOWS_CC_PREFIX_64)-gcc
+		AR = $(WINDOWS_CC_PREFIX_64)-ar
+	else
+		CC = gcc -m64
+	endif
+else ifeq ($(ARCH), x86)
+	DEFINES := $(DEFINES) -DX86
+	ifeq ($(OS), Windows)
+		CC = $(WINDOWS_CC_PREFIX_32)-gcc
+		AR = $(WINDOWS_CC_PREFIX_32)-ar
+	else
+		CC = gcc -m32
+	endif
+else ifeq ($(ARCH), arm)
+	DEFINES := $(DEFINES) -DARM
+	ifeq ($(OS), Windows)
+	else ifeq ($(OS), Mac)
+	else
+	endif
+endif
+
 
 
 #TODO Use this to allow out-of-tree source files.
-VPATH += $(SRC)
+VPATH += $(SRCDIR)
 
-SOURCES	:= $$SOURCES	
+#SOURCES	:= $(SOURCES)	
 
-OBJECTS	:= $(patsubst $(SRC)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
+OBJECTS	:= $(patsubst $(SRCDIR)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
 
 DEPENDENCIES = $(OBJECTS:.o=.deps)
 
@@ -265,17 +166,17 @@ init:
 		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
 		mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR; \
 	done
-	@cp -a $(OUTPUTDIR)/$(SRC)/* $(OUTPUTDIR)/
-	@rm -rd $(OUTPUTDIR)/$(SRC)
+	@cp -a $(OUTPUTDIR)/$(SRCDIR)/* $(OUTPUTDIR)/
+	@rm -rd $(OUTPUTDIR)/$(SRCDIR)
 
-$(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRC)/%.cpp
+$(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $(CCFLAGS) $(DEFINES) $< -o $@ $(INCLUDES)
 
 -include $(DEPENDENCIES)
 
 # TODO: CCFLAGS (can't since it has the '-c' compiler option?)
-$(DEPENDENCIES): $(OUTPUTDIR)/%.deps: $(SRC)/%.cpp
-	@cd $(SRC); export SRCSUBDIR=`find $*.cpp -printf '%h\n'`; cd ../; \
+$(DEPENDENCIES): $(OUTPUTDIR)/%.deps: $(SRCDIR)/%.cpp
+	@cd $(SRCDIR); export SRCSUBDIR=`find $*.cpp -printf '%h\n'`; cd ../; \
 	mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR;
 	@export SOURCENAME=`find $< -printf '%f\n' | sed -e 's/.cpp//g'`; \
 	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
@@ -293,7 +194,7 @@ dist: package
 
 package: cleanDebug
 	mkdir -p $(PACKAGEDIR)/$(LIBDIR)/
-	-@cp -a $(DATA) $(PACKAGEDIR)/
+	-@cp -a $(DATADIR) $(PACKAGEDIR)/
 	cp -a $(LIBDIR)/* $(PACKAGEDIR)/$(LIBDIR)/
 	# For each compiled binary, copy it into the package.
 	@for binary in $(shell find $(BUILDDIR) -maxdepth 1 -type f -printf '%f\n'); do \
@@ -303,10 +204,10 @@ package: cleanDebug
 			# Strip the bin name, extension, and build path from the binary. \
 			export DEST=`echo $$binary | sed s/$(BIN)_//g | sed s/.exe//g`; \
 			cp $(BUILDDIR)/$$binary $(PACKAGEDIR)/$(LIBDIR)/$$DEST/$(BIN).exe; \
-			cp $$SCRIPTDIR/LaunchOnWindows.bat $(PACKAGEDIR)/$(BIN).bat; \
+			cp $(SCRIPTDIR)/LaunchOnWindows.bat $(PACKAGEDIR)/$(BIN).bat; \
 		else \
 			cp $(BUILDDIR)/$$binary $(PACKAGEDIR)/; \
-			cp $$SCRIPTDIR/LaunchOnLinux.sh $(PACKAGEDIR)/$(BIN).sh; \
+			cp $(SCRIPTDIR)/LaunchOnLinux.sh $(PACKAGEDIR)/$(BIN).sh; \
 		fi; \
 	done
 	-@rm $(NAME)_$(VERSION).zip
@@ -331,25 +232,15 @@ cleanAll:
 	-@rm -r $(BUILDDIR) > /dev/null 2>&1
 
 docs:
-	mkdir -p $$DOCDIR
-	(cat Doxyfile ; echo INPUT="$$PWD/$(SRC)") | doxygen -
+	mkdir -p $(DOCDIR)
+	(cat Doxyfile ; echo INPUT="$$PWD/$(SRCDIR)") | doxygen -
+
+project:
+	$(MAKE) -f $(SCRIPTDIR)/CppProjectBuilder/Makefile $(NAME)
 
 
-.PHONY: all
-.PHONY: debug
-.PHONY: release
-.PHONY: shared
-.PHONY: static
-.PHONY: package
-.PHONY: packageLinux
-.PHONY: packageWindows
-.PHONY: dist
-.PHONY: init
-.PHONY: install
-.PHONY: uninstall
-.PHONY: clean
-.PHONY: cleanDebug
-.PHONY: cleanAll
 
+.PHONY: all debug release shared static package dist install uninstall \
+		init clean cleanDebug cleanAll docs project
 
 

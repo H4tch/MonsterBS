@@ -1,10 +1,5 @@
 #!/bin/sh
 
-# TODO
-# Look for ICON and SOURCES within the directory running the script.
-# Fix LaunchOnWindows.bat and LaunchOnLinux.sh to point to correct lib dir.
-# Generate NSIS file.
-
 PREFIX=$PWD
 CPPBUILDERPATH=$PWD/`find $0 -printf '%h\n'`
 CPPBUILDERPATH=`echo $CPPBUILDERPATH | sed -e s@\\\./@@g`
@@ -12,31 +7,22 @@ CPPBUILDERPATH=`echo $CPPBUILDERPATH | sed -e s@\\\./@@g`
 SCRIPTS="$CPPBUILDERPATH/tools"
 FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
-USAGE="USAGE: $0 <YourProject.sh> [<target-directory>]"
-
-if [ $# -lt 1 ]; then
-	echo $USAGE
-	exit 1
-fi
-
-
-# Run the Project script to initialize variables.
-. ./$1
+USAGE="USAGE: $0 [<target-directory>]"
 
 INSTALLDIR=$NAME
-if [ $# -ge 2 ]; then
-	echo "Installing to" $2
-	INSTALLDIR=$2
+if [ $# -ge 1 ]; then
+	echo "Installing to" $1
+	INSTALLDIR=$1
 fi
 
 # NOTE, this prevents you from embedding CppProjectBuilder into your project's
 # root unless you specifically set the target-directory.
-if [ $# -eq 1 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
+if [ $# -eq 0 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
  [ -d $INSTALLDIR ] && [ "$CPPBUILDERPATH" != "$PWD/." ]; then
 	# If I'm running the script from the same directory, the project directory
 	# will be created. Otherwise, if the INSTALLDIR is not specified and the
 	# SRCDIR shared the same name as the Project's name, then the current
-	# directory will be treated as the proeject directory.
+	# directory will be treated as the project directory.
 	echo "--> Treating current directory as the Project's root directory."
 	INSTALLDIR="."
 fi
@@ -55,12 +41,26 @@ mkdir -p $SRCDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
+if [ $INSTALL_CPPPROJECTBUILDER -eq 1 ]; then
+	echo "--> Installing CppProjectBuilder to Project's Script directory."
+	mkdir -p $SCRIPTDIR/CppProjectBuilder/tools
+	cp -a $CPPBUILDERPATH/tools/* $SCRIPTDIR/CppProjectBuilder/tools/
+	cp $CPPBUILDERPATH/Makefile $SCRIPTDIR/CppProjectBuilder/
+	cp $CPPBUILDERPATH/Project.mk $SCRIPTDIR/CppProjectBuilder/
+	cp $CPPBUILDERPATH/$NAME.mk $SCRIPTDIR/CppProjectBuilder/
+	cp $CPPBUILDERPATH/CppProjectBuilder.sh $SCRIPTDIR/CppProjectBuilder/
+	cp $CPPBUILDERPATH/README.md $SCRIPTDIR/CppProjectBuilder/
+fi
+
+
 if [ -f "$CPPBUILDERPATH/$ICON" ]; then
 	echo "--> Copying Icon: '$ICON'."
 	cp $CPPBUILDERPATH/$ICON .
 fi
 
 echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
+
+cp $PREFIX/$NAME.mk .
 
 for FILE in $FILES; do
 	cp -a $SCRIPTS/$FILE $SCRIPTDIR/
@@ -72,7 +72,7 @@ if [ $NEW_PROJECT -eq 1 ]; then
 		echo "--> Copying Project files to new project."
 		cp -a "$PREFIX/Project/*" .
 	fi
-	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$INSTALLDIR" ]; then
+	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$NAME" ]; then
 		echo "--> Copying SRC files to new project."
 		cp -a "$PREFIX/$SRCDIR/" .
 	fi
@@ -253,19 +253,9 @@ Replace "STATICWINLIBS" "$STATICWINLIBS"
 
 Replace "DEFINES_DEBUG" "$DEFINES_DEBUG"
 Replace "DEFINES_RELEASE" "$DEFINES_RELEASE"
-Replace "DEFINES_32" "$DEFINES_32"
-Replace "DEFINES_64" "$DEFINES_64"
-Replace "DEFINES_ARM" "$DEFINES_ARM"
-Replace "DEFINES" "$DEFINES" # Don't move this up.
-Replace "LINUXDEFINES" "$LINUXDEFINES"
-Replace "MACDEFINES" "$MACDEFINES"
-Replace "WINDEFINES" "$WINDEFINES"
 
 Replace "CCFLAGS" "$CCFLAGS"
 Replace "LDFLAGS" "$LDFLAGS"
-Replace "LIBFLAGS_LINUX" "$LIBFLAGS_LINUX"
-Replace "LIBFLAGS_MAC" "$LIBFLAGS_MAC"
-Replace "LIBFLAGS_WINDOWS" "$LIBFLAGS_WINDOWS"
 Replace "LIBFLAGS" "$LIBFLAGS" # Don't move this up.
 Replace "BINFLAGS" "$BINFLAGS"
 Replace "FLAGS_DEBUG" "$FLAGS_DEBUG"
@@ -278,34 +268,6 @@ Replace "BUILD_FOR_WINDOWS_32" "$BUILD_FOR_WINDOWS_32"
 Replace "BUILD_FOR_WINDOWS_64" "$BUILD_FOR_WINDOWS_64"
 Replace "BUILD_FOR_ANDROID_ARM" "$BUILD_FOR_ANDROID_ARM"
 Replace "BUILD_FOR_ANDROID_X86" "$BUILD_FOR_ANDROID_X86"
-
-
-Replace "LINUX_CC_PREFIX_32" "$LINUX_CC_PREFIX_32"
-Replace "LINUX_CC_PREFIX_64" "$LINUX_CC_PREFIX_64"
-Replace "MAC_CC_PREFIX_32" "$MAC_CC_PREFIX_32"
-Replace "MAC_CC_PREFIX_64" "$MAC_CC_PREFIX_64"
-Replace "WINDOWS_CC_PREFIX_32" "$WINDOWS_CC_PREFIX_32"
-Replace "WINDOWS_CC_PREFIX_64" "$WINDOWS_CC_PREFIX_64"
-
-Replace "LINUX_CC_32" "$LINUX_CC_32"
-Replace "LINUX_CC_64" "$LINUX_CC_64"
-Replace "MAC_CC_32" "$MAC_CC_32"
-Replace "MAC_CC_64" "$MAC_CC_64"
-Replace "WINDOWS_CC_32" "$WINDOWS_CC_32"
-Replace "WINDOWS_CC_64" "$WINDOWS_CC_64"
-Replace "LINUX_CC_ARM" "$LINUX_CC_ARM"
-Replace "MAC_CC_ARM" "$MAC_CC_ARM"
-Replace "WINDOWS_CC_ARM" "$WINDOWS_CC_ARM"
-
-Replace "LINUX_AR_32" "$LINUX_AR_32"
-Replace "LINUX_AR_64" "$LINUX_AR_64"
-Replace "MAC_AR_32" "$MAC_AR_32"
-Replace "MAC_AR_64" "$MAC_AR_64"
-Replace "WINDOWS_AR_32" "$WINDOWS_AR_32"
-Replace "WINDOWS_AR_64" "$WINDOWS_AR_64"
-Replace "LINUX_AR_ARM" "$LINUX_AR_ARM"
-Replace "MAC_AR_ARM" "$MAC_AR_ARM"
-Replace "WINDOWS_AR_ARM" "$WINDOWS_AR_ARM"
 
 
 #Replace "PACKAGE_ALL_IN_ONE" $PACKAGE_ALL_IN_ONE"
