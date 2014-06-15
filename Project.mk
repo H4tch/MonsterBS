@@ -2,6 +2,14 @@
 ## Note: All paths must be relative.
 ## 
 ## TODO
+## FRAMEWORK SUPPORT
+## Need to generate sub-project makefiles. How to handle library support?
+##	Need mechanism for overriding variables.
+## Add an extra DEFINE when installing MODULES within a Framework to notify that
+##	it is being compiled STANDALONE.
+## Need a place for common code that all projects share. Maybe a better 
+##	mechanism for "installing" headers.
+##
 ## Generate Windows NSIS installer file.
 ## Project Type. If Library, change the Makefile OUTPUT, ext, and default make target correct. (so, dylib, dll) (what about static?)
 ## RELASE Options: -fconserve-space (saves space in the exe)
@@ -28,8 +36,9 @@ FILENAME = $(NAME)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION =
-# TODO: Need ability to specify Application, Library. (Framework (umbrella project))
-PROJECT_TYPE = Application
+# TODO: Imrpove support for project's type.
+PROJECT_TYPE = Application # Application | Library | Framework
+MODULES = # Specify sub-projects if PROJECT_TYPE = Framework
 # Unix Desktop Launcher file settings.
 # http://standards.freedesktop.org/menu-spec/latest/apa.html
 CATEGORIES = Game;ActionGame;RolePlaying
@@ -40,7 +49,7 @@ RUN_IN_TERMINAL = false
 
 # Install this Cpp Project Generator into the source tree of your project to
 # tweak the install later?
-INSTALL_CPPPROJECTBUILDER=0
+INSTALL_CPPPROJECTBUILDER = 0
 
 
 #### Directories ####
@@ -51,7 +60,7 @@ LIBDIR = lib
 #PLATFORM_LIBDIR=$(LIBDIR)/$(OS)"_"$(ARCH)
 # Place where the main '.h' source files are.
 #PROJ_INCLUDEDIR=$(SRCDIR)/include
-INCLUDEDIR = include # TODO What is this good for?? Compiliation vs Installation...
+INCLUDEDIR = include # TODO What is this good for?? Compiliation vs Installation...What if PROJECT_TYPE == Library?
 BUILDDIR = build
 # Docdir Who?
 DOCDIR = doc
@@ -63,6 +72,7 @@ SCRIPTDIR = tools
 
 #### Source files ####
 
+# TODO: Should the umbrella project have source files??
 SOURCES = $(SRCDIR)/main.cpp
 #SOURCES = $(patsubstr %, $(SRCDIR)/%, $(SOURCES) )
 
@@ -73,7 +83,6 @@ SOURCES = $(SRCDIR)/main.cpp
 
 INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR) -I.
 ## Note, in some cases, the order of libs do matter.
-# TODO: Need to fix all the escapings.
 LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf  #-lGL -lbox2d
 STATICLIBS = -static-libstdc++ -static-libgcc
 
@@ -125,7 +134,6 @@ HIDE_INC_PATH_PREFIX =
 HIDE_DOC_WITH_SYMBOLS =
 # Directory containing images for documentation. Used with image tag.
 DOC_IMAGE_DIR =
-
 
 
 

@@ -67,7 +67,7 @@ INSTALL_DATA = $(INSTALL) -m 644
 DESTDIR = /usr/share/
 
 
-include $(SCRIPTDIR)/platform.mk
+include $(SCRIPTDIR)/.platform.mk
 export
 
 ## DEBUG AND RELEASE OPTIONS
@@ -236,7 +236,7 @@ docs:
 	(cat Doxyfile ; echo INPUT="$$PWD/$(SRCDIR)") | doxygen -
 
 project:
-	$(MAKE) -f $(SCRIPTDIR)/CppProjectBuilder/Makefile $(NAME)
+	@$(MAKE) -f $(SCRIPTDIR)/CppProjectBuilder/Makefile $(NAME)
 
 
 

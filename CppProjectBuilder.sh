@@ -43,11 +43,11 @@ mkdir -p $SCRIPTDIR
 
 if [ $INSTALL_CPPPROJECTBUILDER -eq 1 ]; then
 	echo "--> Installing CppProjectBuilder to Project's Script directory."
+	echo "installed.."
 	mkdir -p $SCRIPTDIR/CppProjectBuilder/tools
 	cp -a $CPPBUILDERPATH/tools/* $SCRIPTDIR/CppProjectBuilder/tools/
 	cp $CPPBUILDERPATH/Makefile $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/Project.mk $SCRIPTDIR/CppProjectBuilder/
-	cp $CPPBUILDERPATH/$NAME.mk $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/CppProjectBuilder.sh $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/README.md $SCRIPTDIR/CppProjectBuilder/
 fi
@@ -182,7 +182,8 @@ if [ "$PROJECT_TYPE" != "Application" ]; then
 fi
 
 if [ "$PROJECT_TYPE" != "Framework" ]; then
-	RemoveFile MasterProject.mk
+	true
+	#RemoveFile MasterProject.mk
 fi
 
 DEPENDS_SDL2=0
@@ -418,6 +419,21 @@ fi
 if [ -d "$LIBDIR/" ] && [ "$INSTALLDIR" != "." ]; then
 	echo "--> Copying LIB files to project."
 	cp -a "$LIBDIR/" "$INSTALLDIR/"
+fi
+
+
+if [ "$PROJECT_TYPE" = "Framework" ]; then
+	echo "--> Done installing base project."
+	echo "--> Setting up sub-projects."
+	echo "--> TODO: Generate Project.mk files for each project."
+	for MODULE in $MODULES; do
+		cd $PREFIX/$INSTALLDIR/$SRCDIR
+		if [ -f $PREFIX/$MODULE.mk ]; then
+			make -f $CPPBUILDER_PATH/Makefile $MODULE
+		else
+			echo "--> Failed to find $MODULE.mk"
+		fi
+	done
 fi
 
 
