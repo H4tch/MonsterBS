@@ -3,6 +3,14 @@
 ## 
 ## TODO
 ## FRAMEWORK SUPPORT
+## Need to modify sub project makefile's directories so they are shared.
+## 	All Makefiles, Doxyfiles, tools/scripts should be outside of sub-project 
+##	dirs?
+##	Build target should be same except embedded within sub-project dir.
+## 	Libs should be installed top level.
+## 	
+## When generating/modifying MODULE's make files, if the framework is installing
+## 	CPPPROJECTBUILDER, then modify the Makefile to be able to find it.
 ## Need to generate sub-project makefiles. How to handle library support?
 ##	Need mechanism for overriding variables.
 ## Add an extra DEFINE when installing MODULES within a Framework to notify that
@@ -53,14 +61,15 @@ INSTALL_CPPPROJECTBUILDER = 0
 
 
 #### Directories ####
-
-SRCDIR = src # TODO: Change to project's name??
+# TODO: Change to project's name??
+SRCDIR = src
 LIBDIR = lib
 # Where to look for installed platform specific libraries. Possible to use BITS.(only in Makefile) 
 #PLATFORM_LIBDIR=$(LIBDIR)/$(OS)"_"$(ARCH)
 # Place where the main '.h' source files are.
 #PROJ_INCLUDEDIR=$(SRCDIR)/include
-INCLUDEDIR = include # TODO What is this good for?? Compiliation vs Installation...What if PROJECT_TYPE == Library?
+# TODO What is this good for?? Compiliation vs Installation...What if PROJECT_TYPE == Library?
+INCLUDEDIR = include
 BUILDDIR = build
 # Docdir Who?
 DOCDIR = doc
