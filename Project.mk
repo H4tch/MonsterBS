@@ -2,7 +2,12 @@
 ## Note: All paths must be relative.
 ## 
 ## TODO
+## Emscriptem Compilation. This uses the clang compiler, does it support GCC's
+##	compiler options?
 ## FRAMEWORK SUPPORT
+## Add Framework's directories to the include path?
+## SubFrameworks should be setup as a Module. They should also have a test entry
+##	entry function so the entire Framework can be tested once compiled.
 ## Need to modify sub project makefile's directories so they are shared.
 ## 	All Makefiles, Doxyfiles, tools/scripts should be outside of sub-project 
 ##	dirs?
@@ -44,9 +49,11 @@ FILENAME = $(NAME)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION =
-# TODO: Imrpove support for project's type.
-PROJECT_TYPE = Application # Application | Library | Framework
-MODULES = # Specify sub-projects if PROJECT_TYPE = Framework
+# TODO: Improve support for project's type.
+# Project type can be Application, Library, or Framework.
+PROJECT_TYPE = Application
+# Specify sub-projects if PROJECT_TYPE == Framework
+MODULES =
 # Unix Desktop Launcher file settings.
 # http://standards.freedesktop.org/menu-spec/latest/apa.html
 CATEGORIES = Game;ActionGame;RolePlaying
@@ -85,14 +92,17 @@ SCRIPTDIR = tools
 SOURCES = $(SRCDIR)/main.cpp
 #SOURCES = $(patsubstr %, $(SRCDIR)/%, $(SOURCES) )
 
+#TODO: For Framework, these variables should be used as a base value for the 
+# 		sub-projects. For example, specify where everything installs to, 
+# 		including headers and compiled libraries.
 
 #### Build Settings ####
 
 # MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
 
-INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR) -I.
+INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR)
 ## Note, in some cases, the order of libs do matter.
-LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf  #-lGL -lbox2d
+LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -lSDL2 -lSDL2_image -lSDL2_ttf #-lGL -lbox2d
 STATICLIBS = -static-libstdc++ -static-libgcc
 
 DEFINES =
@@ -110,8 +120,9 @@ BUILD_FOR_MAC_32=0
 BUILD_FOR_MAC_64=0
 BUILD_FOR_WINDOWS_32=1
 BUILD_FOR_WINDOWS_64=1
-BUILD_FOR_ANDROID_ARM=0 # Not supported yet.
-BUILD_FOR_ANDROID_X86=0 # Not supported yet.
+# Not supported yet.
+BUILD_FOR_ANDROID_ARM=0
+BUILD_FOR_ANDROID_X86=0
 
 
 #### PACKAGING ####

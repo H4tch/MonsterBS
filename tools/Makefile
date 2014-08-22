@@ -53,6 +53,8 @@
 include $$NAME.mk
 export
 
+WORKINGDIR := $(PWD)
+
 BIN = $(FILENAME)
 PACKAGEDIR = $(BUILDDIR)/$(NAME)_$(VERSION)
 DEFINES += -DCOMPILE_DATE=$$DATE
@@ -118,18 +120,18 @@ WINDOWS_CC_PREFIX_64 = x86_64-w64-mingw32
 ifeq ($(ARCH), x86_64)
 	DEFINES := $(DEFINES) -DX86_64
 	ifeq ($(OS), Windows)
-		CC = $(WINDOWS_CC_PREFIX_64)-gcc
+		CC = $(WINDOWS_CC_PREFIX_64)-g++
 		AR = $(WINDOWS_CC_PREFIX_64)-ar
 	else
-		CC = gcc -m64
+		CC = g++ -m64
 	endif
 else ifeq ($(ARCH), x86)
 	DEFINES := $(DEFINES) -DX86
 	ifeq ($(OS), Windows)
-		CC = $(WINDOWS_CC_PREFIX_32)-gcc
+		CC = $(WINDOWS_CC_PREFIX_32)-g++
 		AR = $(WINDOWS_CC_PREFIX_32)-ar
 	else
-		CC = gcc -m32
+		CC = g++ -m32
 	endif
 else ifeq ($(ARCH), arm)
 	DEFINES := $(DEFINES) -DARM
@@ -150,11 +152,7 @@ OBJECTS	:= $(patsubst $(SRCDIR)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
 
 DEPENDENCIES = $(OBJECTS:.o=.deps)
 
-all: debug
-
-debug: init $(OUTPUT)
-
-release: init $(OUTPUT)
+all: init $(OUTPUT)
 
 $(OUTPUT): $(OBJECTS)
 	$(CC) $(STATICLIBS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
@@ -166,8 +164,10 @@ init:
 		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
 		mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR; \
 	done
-	@cp -a $(OUTPUTDIR)/$(SRCDIR)/* $(OUTPUTDIR)/
-	@rm -rd $(OUTPUTDIR)/$(SRCDIR)
+	@if [ "$(SRCDIR)" != "." ]; then \
+		cp -a $(OUTPUTDIR)/$(SRCDIR)/* $(OUTPUTDIR)/; \
+		rm -rd $(OUTPUTDIR)/$(SRCDIR); \
+	fi
 
 $(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $(CCFLAGS) $(DEFINES) $< -o $@ $(INCLUDES)
@@ -176,10 +176,10 @@ $(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRCDIR)/%.cpp
 
 # TODO: CCFLAGS (can't since it has the '-c' compiler option?)
 $(DEPENDENCIES): $(OUTPUTDIR)/%.deps: $(SRCDIR)/%.cpp
-	@cd $(SRCDIR); export SRCSUBDIR=`find $*.cpp -printf '%h\n'`; cd ../; \
+	@cd $(SRCDIR); export SRCSUBDIR=`find $*.cpp -printf '%h\n'`; cd $(WORKINGDIR); \
 	mkdir -p $(OUTPUTDIR)/$$SRCSUBDIR;
 	@export SOURCENAME=`find $< -printf '%f\n' | sed -e 's/.cpp//g'`; \
-	$(CC) -std=c++0x -MM -MG $(DEFINES) $< | \
+	$(CC) -std=c++11 -MM -MG $(DEFINES) $< | \
 	sed -e "s@$$SOURCENAME.o:@$(OUTPUTDIR)/$*.o $(OUTPUTDIR)/$*.deps:@g" > $@
 
 shared: $(OBJECTS)
