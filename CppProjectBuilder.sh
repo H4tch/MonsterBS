@@ -218,9 +218,8 @@ Replace()
 
 echo "--> Inserting Project variables into project files."
 
-# Note, the order for some of these matter. For example, if $$NAME goes before
-# $$NAMESPACE, then it will mess $$NAMESPACE up.
-
+# Note, the order for some of these matter.
+# Example, replacing NAME before NAMESPACE invalidate all NAMESPACE instances.
 Replace "NAMESPACE" "$NAMESPACE"
 Replace "NAME" "$NAME"
 Replace "FILENAME" "$FILENAME"
@@ -288,10 +287,6 @@ RemoveFile Doxyfile # Remove from $FILES variable.
 cd $PREFIX
 echo "--> Installing libraries."
 
-# TODO
-# check for local libs...
-# 	Download, compile, install libs. Auto detect SDL. 
-#
 
 OS=`uname -s`
 ARCH=`uname -m`
@@ -342,8 +337,8 @@ GetInstalledSDLLibrariesFromSystem()
 	cd $INSTALLDIR/$LIBDIR
 	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2* Linux_x86/; fi
 	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2* Linux_x86_64/; fi
-	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then ; fi
-	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then ; fi
+	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then cp -a /Library/; fi
+	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then cp -a /Library/; fi
 	cd $PREFIX
 }
 
@@ -389,8 +384,8 @@ fi
 
 if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
 	cd $INSTALLDIR/$LIBDIR/
-	echo "--> Getting libwinpthread.dll for MinGW applications."
 	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
+		echo "--> Getting libwinpthread.dll for MinGW applications."
 		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll Windows_x86/
 	fi
 	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then

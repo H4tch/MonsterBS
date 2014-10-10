@@ -1,0 +1,48 @@
+## Project.mk TODO:
+Need mechanism for overriding variables? This is so compiling a framework can override key variables.
+Add an extra DEFINE when installing MODULES within a Framework to notify that
+	it is being compiled STANDALONE.
+A Framework's makefile should have the ability to generate a new sub-project?
+SubFrameworks should be setup as a Module. They should also have a test entry
+	entry function so the entire Framework can be tested once compiled.
+Need to modify sub project makefile's directories so they are shared.
+	All Makefiles, Doxyfiles, tools/scripts should be outside of sub-project 
+	dirs?
+	Build target should be same except embedded within sub-project dir.
+	Libs should be installed top level.
+Install CPPPROJECTBUILDER and Scripts top level.
+
+Automatic prefixing for libs, includes, etc.
+RELASE Options: -fconserve-space (saves space in the exe)
+	-fvisibility=hidden #-fvisibility-inlines-hidden
+StaticLibrary?
+Emscriptem Compilation. This uses the clang compiler options.(does llvm support gCXX ops?)
+Windows NSIS installer setup.
+
+
+
+## Makefile TODO:
+http://www.gnu.org/software/make/manual/make.html#Directory-Variables
+	DESTDIR
+	MAKE: test, dist, install, uninstall, prefix, exec-prefix, /usr/local
+	datarootdir, /usr/local/share, storeage of architecture independent data
+	datadir, typically same as datarootdir
+	includedir,	/usr/local/include/ where to install header files 
+	Ability for user to override variables.
+	
+	Metadata for built packages. Include $$ICON
+	NSIS Windows installer.
+	Simpler SYSTEM names: Linux.64, Windows.32, Mac.32
+	Make the Zip file(s) a target. Each platform has a zip target.
+		The zip needs build/$(SYSTEM).release as a dependency. 
+	Move compiled Linux binary to bin/lib folder?
+
+
+# Install stuff.
+SHELL = /bin/sh
+INSTALL = install
+INSTALL_PROGRAM = INSTALL
+INSTALL_DATA = $(INSTALL) -m 644
+DESTDIR = /usr/share/
+
+

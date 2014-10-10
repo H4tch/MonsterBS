@@ -1,30 +1,6 @@
+##
 ## This Makefile contains variables used by the other scripts.
 ## Note: All paths must be relative.
-## 
-## NOTE
-## VPATHS are needed when you don't #include sub-folder headers with relative paths.
-## 
-## TODO
-## Need mechanism for overriding variables? This is so compiling a framework can override key variables.
-## Add an extra DEFINE when installing MODULES within a Framework to notify that
-##	it is being compiled STANDALONE.
-## A Framework's makefile should have the ability to generate a new sub-project?
-## SubFrameworks should be setup as a Module. They should also have a test entry
-##	entry function so the entire Framework can be tested once compiled.
-## Need to modify sub project makefile's directories so they are shared.
-## 	All Makefiles, Doxyfiles, tools/scripts should be outside of sub-project 
-##	dirs?
-##	Build target should be same except embedded within sub-project dir.
-## 	Libs should be installed top level.
-## Install CPPPROJECTBUILDER and Scripts top level.
-## 
-## Automatic prefixing for libs, includes, etc.
-## Autoinclude directories that are within third_party directory.
-## RELASE Options: -fconserve-space (saves space in the exe)
-## 	-fvisibility=hidden #-fvisibility-inlines-hidden
-## StaticLibrary?
-## Emscriptem Compilation. This uses the clang compiler options.(does llvm support gCXX ops?)
-## Windows NSIS installer setup.
 ##
 
 
@@ -92,6 +68,10 @@ CXXFLAGS = -c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 LDFLAGS = -fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath=$$ORIGIN
 LIBFLAGS = -export-dynamic -shared
 
+# VPATHS are searched when a file can't be found by MAKE. This is needed when
+#	src/dir/source.cpp includes src/dir/source.h with "#include "source.h"".
+# The dependency will be added as "source.h" instead of "dir/source.h".
+VPATH += $(SRCDIR) $(INCLUDEDIR)
 
 
 define RELEASE_PROFILE
@@ -208,6 +188,5 @@ HIDE_INC_PATH_PREFIX =
 HIDE_DOC_WITH_SYMBOLS =
 # Directory containing images for documentation. Used with image tag.
 DOC_IMAGE_DIR =
-
 
 
