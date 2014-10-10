@@ -20,10 +20,5 @@ and customize a C++ project from a single control file.
 * LinesOfCode calculation script with cloc-1.60.pl.
 
 
-#### Todo
-Better support for Framework, or umbrella, projects.
-Windows GUI Installer script using NSIS.
-
-
 #### Created by Dan H4tch
 

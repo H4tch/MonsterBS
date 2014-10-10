@@ -14,7 +14,7 @@ export
 all:
 	@echo "Please specify the name of the Project you would like to generate."
 
-$(PROJECT): %: %.mk
+$(PROJECT): %: %.mk CppProjectBuilder.sh
 	$(CPPBUILDER_PATH)/CppProjectBuilder.sh
 	-@ #if [ "$(PROJECT_TYPE)" = "Framework" ]; then \
 	#	$(foreach MODULE, $(MODULES), $(MAKE) $(MODULE); ); \
@@ -22,7 +22,6 @@ $(PROJECT): %: %.mk
 
 $(FILES):
 	echo "File: $@"
-
 
 .PHONY: all
 

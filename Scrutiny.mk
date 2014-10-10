@@ -1,28 +1,32 @@
-
-
 #### Metadata ####
 
 NAME = Scrutiny
+# Used for Android project, Doxygen, etc. Should be a reverse domain name.
 NAMESPACE = com.$(NAME).app
-FILENAME = scrutiny
+# Don't include extension.
+FILENAME = $(NAME)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION = Reflection and generic layer on top of C++ for creating more dynamic applications.
 PROJECT_TYPE = Library
-# http://standards.freedesktop.org/menu-spec/latest/apa.html
-CATEGORIES = 
+MODULES =
+CATEGORIES = Game;ActionGame;RolePlaying
 RUN_IN_TERMINAL = false
-
 
 # Install this Cpp Project Generator into the source tree of your project to
 # tweak the install later?
-INSTALL_CPPPROJECTBUILDER=1
+INSTALL_CPPPROJECTBUILDER = 1
 
 
 #### Directories ####
-
+# TODO: Change to project's name??
 SRCDIR = Scrutiny
 LIBDIR = lib
+# Where to look for installed platform specific libraries. Possible to use BITS.(only in Makefile) 
+#PLATFORM_LIBDIR=$(LIBDIR)/$(OS)"_"$(ARCH)
+# Place where the main '.h' source files are.
+#PROJ_INCLUDEDIR=$(SRCDIR)/include
+# TODO What is this good for?? Compiliation vs Installation...What if PROJECT_TYPE == Library?
 INCLUDEDIR = include
 BUILDDIR = build
 DOCDIR = doc
@@ -31,24 +35,27 @@ THIRDPARTYDIR = third_party
 SCRIPTDIR = tools
 
 
+
 #### Source files ####
 
-SOURCES = $(SRCDIR)/test/Test.cpp $(SRCDIR)/test/CoroutineTest.cpp \
+# TODO: Should the umbrella project have source files??
+SOURCES = $(SRCDIR)/Reflect.cpp \
+		$(SRCDIR)/test/Test.cpp $(SRCDIR)/test/CoroutineTest.cpp \
 		$(SRCDIR)/test/LuaBindingTest.cpp $(SRCDIR)/test/ReflectionTest.cpp \
 		$(SRCDIR)/test/EnumTest.cpp $(SRCDIR)/test/AllocatorTest.cpp \
-		$(SRCDIR)/test/ValueTest.cpp $(SRCDIR)/Reflect.cpp
-
-#SOURCES = $(patsubstr %, $(SRCDIR)/%, $(SOURCES) )
-
+		$(SRCDIR)/test/ValueTest.cpp $(SRCDIR)/test/SumTypeTest.cpp \
+		$(SRCDIR)/test/RuleTest.cpp
 
 #### Build Settings ####
 
-INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR) -I.
+# MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
+
+INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR)
+## Note, in some cases, the order of libs do matter.
 LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L$(LIBDIR)/$(lua) -llua52
 STATICLIBS = -static-libstdc++ -static-libgcc
 
 DEFINES = -DLUA_VM -DSCRUTINY_TEST -DSCRUTINY_STANDALONE
-
 CCFLAGS = -c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 			-fvisibility=hidden -fvisibility-inlines-hidden \
 			-ffunction-sections -fdata-sections
@@ -63,8 +70,9 @@ BUILD_FOR_MAC_32=0
 BUILD_FOR_MAC_64=0
 BUILD_FOR_WINDOWS_32=1
 BUILD_FOR_WINDOWS_64=1
-BUILD_FOR_ANDROID_ARM=0 # Not supported yet.
-BUILD_FOR_ANDROID_X86=0 # Not supported yet.
+# Not supported yet.
+BUILD_FOR_ANDROID_ARM=0
+BUILD_FOR_ANDROID_X86=0
 
 
 #### PACKAGING ####
@@ -75,6 +83,7 @@ BUILD_FOR_ANDROID_X86=0 # Not supported yet.
 # Currently only "zip" and "tar.gz" archives are supported. 
 PACKAGE_ARCHIVE_TYPE_LINUX = tar.gz
 PACKAGE_ARCHIVE_TYPE_WINDOWS = zip
+
 
 
 #### Documentation Settings ####
@@ -95,7 +104,6 @@ HIDE_INC_PATH_PREFIX =
 HIDE_DOC_WITH_SYMBOLS =
 # Directory containing images for documentation. Used with image tag.
 DOC_IMAGE_DIR =
-
 
 
 

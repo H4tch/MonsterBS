@@ -1,11 +1,10 @@
 #!/bin/sh
 
 PREFIX=$PWD
+# Get path to where the script is.
 CPPBUILDERPATH=$PWD/`find $0 -printf '%h\n'`
+# Not sure what this does exactly.
 CPPBUILDERPATH=`echo $CPPBUILDERPATH | sed -e s@\\\./@@g`
-
-SCRIPTS="$CPPBUILDERPATH/tools"
-FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
 USAGE="USAGE: $0 [<target-directory>]"
 
@@ -15,25 +14,29 @@ if [ $# -ge 1 ]; then
 	INSTALLDIR=$1
 fi
 
+
 # NOTE, this prevents you from embedding CppProjectBuilder into your project's
 # root unless you specifically set the target-directory.
+# If I'm running the script from the current directory, the project directory
+# will be created. Otherwise, if the INSTALLDIR is not specified and the
+# SRCDIR shared the same name as the Project's name, then the current
+# directory will be treated as the project directory.
 if [ $# -eq 0 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
  [ -d $INSTALLDIR ] && [ "$CPPBUILDERPATH" != "$PWD/." ]; then
-	# If I'm running the script from the same directory, the project directory
-	# will be created. Otherwise, if the INSTALLDIR is not specified and the
-	# SRCDIR shared the same name as the Project's name, then the current
-	# directory will be treated as the project directory.
 	echo "--> Treating current directory as the Project's root directory."
 	INSTALLDIR="."
 fi
 
-echo "--> Creating Project" $NAME
+SCRIPTS="$CPPBUILDERPATH/tools"
+FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
 NEW_PROJECT=0
-
 if [ ! -d "$INSTALLDIR" ]; then
+	echo "--> Creating New Project " "'$NAME'"
 	NEW_PROJECT=1
 	mkdir -p $INSTALLDIR
+else
+	echo "--> Creating Project" "'$NAME'"
 fi
 
 cd $INSTALLDIR
@@ -43,15 +46,14 @@ mkdir -p $SCRIPTDIR
 
 if [ $INSTALL_CPPPROJECTBUILDER -eq 1 ]; then
 	echo "--> Installing CppProjectBuilder to Project's Script directory."
-	echo "installed.."
 	mkdir -p $SCRIPTDIR/CppProjectBuilder/tools
 	cp -a $CPPBUILDERPATH/tools/* $SCRIPTDIR/CppProjectBuilder/tools/
 	cp $CPPBUILDERPATH/Makefile $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/Project.mk $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/CppProjectBuilder.sh $SCRIPTDIR/CppProjectBuilder/
 	cp $CPPBUILDERPATH/README.md $SCRIPTDIR/CppProjectBuilder/
+	echo "installed.."
 fi
-
 
 if [ -f "$CPPBUILDERPATH/$ICON" ]; then
 	echo "--> Copying Icon: '$ICON'."
@@ -68,15 +70,18 @@ done
 
 
 if [ $NEW_PROJECT -eq 1 ]; then
-	if [ -d "$PREFIX/Project/" ]; then
+	# Initial Project Files.
+	if [ -d "$PREFIX/Project/" ] && [ "Project" != "$NAME" ]; then
 		echo "--> Copying Project files to new project."
+		# TODO Why is this failing?!?! It works without the asterisk, but doesn't
+		# copy the contents of the directory.
 		cp -a "$PREFIX/Project/*" .
 	fi
 	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$NAME" ]; then
 		echo "--> Copying SRC files to new project."
 		cp -a "$PREFIX/$SRCDIR/" .
 	fi
-	if [ -d "$PREFIX/$DATADIR/" ]; then
+	if [ -d "$PREFIX/$DATADIR/" ] && [ "$DATADIR" != "$NAME" ]; then
 		echo "--> Copying DATA files to new project."
 		cp -a "$PREFIX/$DATADIR/" .
 	fi
@@ -85,81 +90,71 @@ fi
 
 RemoveFile()
 {
-	if [ $# -lt 1 ]; then
-		exit 1
-	fi
+	if [ $# -lt 1 ]; then exit 1; fi
+	if [ "$KEEP_UNNEEDED_SCRIPTS" -eq 1 ]; then exit 0; fi
 	rm $SCRIPTDIR/$1 > /dev/null 2>&1
-	FILES=`echo $FILES | sed -e s/$1//g`
+	# TODO Match _$1_
+	FILES=`echo $FILES | sed -e "s/$1/ /g"`
 }
 
 
+# . getBuildSettings.sh
 
-BUILD_FOR_UNIX=0
-BUILD_FOR_LINUX=0
-BUILD_FOR_MAC=0
-BUILD_FOR_WINDOWS=0
-BUILD_FOR_ANDROID=0
-
+BUILD_FOR_UNIX=0; BUILD_FOR_LINUX=0; BUILD_FOR_MAC=0;  BUILD_FOR_WINDOWS=0;  BUILD_FOR_ANDROID=0
 
 if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then
-	BUILD_FOR_UNIX=1
-	BUILD_FOR_LINUX=1
-	mkdir -p $LIBDIR/Linux_x86/
+	BUILD_FOR_UNIX=1; BUILD_FOR_LINUX=1; mkdir -p $LIBDIR/Linux_x86/
 fi
 if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then
-	BUILD_FOR_UNIX=1
-	BUILD_FOR_LINUX=1
-	mkdir -p $LIBDIR/Linux_x86_64/
+	BUILD_FOR_UNIX=1; BUILD_FOR_LINUX=1; mkdir -p $LIBDIR/Linux_x86_64/
 fi
 
 if [ $BUILD_FOR_MAC_32 -eq 1 ]; then
-	BUILD_FOR_UNIX=1
-	BUILD_FOR_MAC=1
-	mkdir -p $LIBDIR/Mac_x86/
+	BUILD_FOR_UNIX=1; BUILD_FOR_MAC=1; mkdir -p $LIBDIR/Mac_x86/
 fi
 if [ $BUILD_FOR_MAC_64 -eq 1 ]; then
-	BUILD_FOR_UNIX=1
-	BUILD_FOR_MAC=1
-	mkdir -p $LIBDIR/Mac_x86_64/
+	BUILD_FOR_UNIX=1; BUILD_FOR_MAC=1; mkdir -p $LIBDIR/Mac_x86_64/
 fi
-
 
 if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
-	BUILD_FOR_WINDOWS=1
-	mkdir -p $LIBDIR/Windows_x86/
+	BUILD_FOR_WINDOWS=1; mkdir -p $LIBDIR/Windows_x86/
 fi
 if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
-	BUILD_FOR_WINDOWS=1
-	mkdir -p $LIBDIR/Windows_x86_64/
+	BUILD_FOR_WINDOWS=1; mkdir -p $LIBDIR/Windows_x86_64/
 fi
 
-
-if [ $BUILD_FOR_ANDROID_ARM -eq 1 ]; then
-	BUILD_FOR_ANDROID=1
-fi
-if [ $BUILD_FOR_ANDROID_X86 -eq 1 ]; then
-	BUILD_FOR_ANDROID=1
-fi
+if [ $BUILD_FOR_ANDROID_ARM -eq 1 ]; then BUILD_FOR_ANDROID=1; fi
+if [ $BUILD_FOR_ANDROID_X86 -eq 1 ]; then BUILD_FOR_ANDROID=1; fi
 
 
 
 echo "--> Removing Unneeded Files."
 
-# Should I copy what I need, or copy and remove what I don't
+# Never going to be building the project from a unix os, so remove the scripts
+# that run on these platforms.
+if [ $BUILD_ON_LINUX -eq 0 ] && [ $BUILD_ON_MAC -eq 0 ]; then
+	for FILE in $FILES; do RemoveFile $FILE; done
+	cp -a $SCRIPTS/Makefile $SCRIPTDIR/
+	cp -a $SCRIPTS/Android.mk $SCRIPTDIR/
+	cp -a $SCRIPTS/custom-android.mk $SCRIPTDIR/
+	cp -a $SCRIPTS/Doxyfile $SCRIPTDIR/
+	cp -a $SCRIPTS/LaunchOnWindows.bat $SCRIPTDIR/
+	cp -a $SCRIPTS/Installer.nsh $SCRIPTDIR/
+fi
+
 
 if [ $BUILD_FOR_UNIX -eq 0 ]; then
 	RemoveFile LaunchOnLinux.sh
 	RemoveFile Get_SDL2_LinuxLibs.sh
 	RemoveFile GenerateLinuxLauncher.sh
+	RemoveFile CompileGlewForMingW.sh
 fi
 
 if [ $BUILD_FOR_LINUX -eq 0 ]; then
 	RemoveFile Fix_Ubuntu_SDL2_32-bit_Libs.sh
 fi
 
-if [ $BUILD_FOR_MAC -eq 0 ]; then
-	true
-fi
+if [ $BUILD_FOR_MAC -eq 0 ]; then true; fi
 
 if [ $BUILD_FOR_WINDOWS -eq 0 ]; then
 	RemoveFile LaunchOnWindows.bat
@@ -181,10 +176,8 @@ if [ "$PROJECT_TYPE" != "Application" ]; then
 	RemoveFile GenerateLinuxLauncher.sh
 fi
 
-if [ "$PROJECT_TYPE" != "Framework" ]; then
-	true
-	#RemoveFile MasterProject.mk
-fi
+if [ "$PROJECT_TYPE" != "Framework" ]; then true; fi
+
 
 DEPENDS_SDL2=0
 echo "$LIBS $STATICLIBS $LINUXLIBS $LINUXSTATICLIBS $WINLIBS $WINSTATICLIBS" | grep "\-lSDL2 "
@@ -219,7 +212,7 @@ Replace()
 
 
 
-echo "--> Inserting Project variables into initial files."
+echo "--> Inserting Project variables into project files."
 
 # Note, the order for some of these matter. For example, if $$NAME goes before
 # $$NAMESPACE, then it will mess $$NAMESPACE up.
@@ -235,14 +228,14 @@ Replace "RUN_IN_TERMINAL" "$RUN_IN_TERMINAL"
 
 Replace "SRCDIR" "$SRCDIR"
 Replace "LIBDIR" "$LIBDIR"
-#Replace "PLATFORM_LIBDIR" "$PLATFORM_LIBDIR"
-#Replace "PROJ_INCLUDEDIR" "$PROJ_INCLUDEDIR"
 Replace "INCLUDEDIR" "$INCLUDEDIR"
 Replace "BUILDDIR" "$BUILDDIR"
 Replace "DOCDIR" "$DOCDIR"
 Replace "DATADIR" "$DATADIR"
 Replace "THIRDPARTYDIR" "$THIRDPARTYDIR"
 Replace "SCRIPTDIR" "$SCRIPTDIR"
+#Replace "PLATFORM_LIBDIR" "$PLATFORM_LIBDIR"
+#Replace "PROJ_INCLUDEDIR" "$PROJ_INCLUDEDIR"
 
 Replace "SOURCES" "$SOURCES"
 
@@ -252,17 +245,14 @@ Replace "STATICLIBS" "$STATICLIBS"
 Replace "WINLIBS" "$WINLIBS"
 Replace "STATICWINLIBS" "$STATICWINLIBS"
 
-Replace "DEFINES_DEBUG" "$DEFINES_DEBUG"
-Replace "DEFINES_RELEASE" "$DEFINES_RELEASE"
-
 Replace "CCFLAGS" "$CCFLAGS"
 Replace "LDFLAGS" "$LDFLAGS"
 Replace "LIBFLAGS" "$LIBFLAGS" # Don't move this up.
 Replace "BINFLAGS" "$BINFLAGS"
-Replace "FLAGS_DEBUG" "$FLAGS_DEBUG"
-Replace "FLAGS_RELEASE" "$FLAGS_RELEASE"
 
-
+Replace "BUILD_ON_LINUX" "$BUILD_ON_LINUX"
+Replace "BUILD_ON_MAC" "$BUILD_ON_MAC"
+Replace "BUILD_ON_WINDOWS" "$BUILD_ON_WINDOWS"
 Replace "BUILD_FOR_LINUX_32" "$BUILD_FOR_LINUX_32"
 Replace "BUILD_FOR_LINUX_64" "$BUILD_FOR_LINUX_64"
 Replace "BUILD_FOR_WINDOWS_32" "$BUILD_FOR_WINDOWS_32"
@@ -270,11 +260,9 @@ Replace "BUILD_FOR_WINDOWS_64" "$BUILD_FOR_WINDOWS_64"
 Replace "BUILD_FOR_ANDROID_ARM" "$BUILD_FOR_ANDROID_ARM"
 Replace "BUILD_FOR_ANDROID_X86" "$BUILD_FOR_ANDROID_X86"
 
-
 #Replace "PACKAGE_ALL_IN_ONE" $PACKAGE_ALL_IN_ONE"
 Replace "PACKAGE_ARCHIVE_TYPE_LINUX" "$PACKAGE_ARCHIVE_TYPE_LINUX"
 Replace "PACKAGE_ARCHIVE_TYPE_WINDOWS" "$PACKAGE_ARCHIVE_TYPE_WINDOWS"
-
 
 Replace "DOCSET_NAME" "$DOCSET_NAME"
 Replace "PUBLISHERNAME" "$PUBLISHERNAME"
@@ -288,28 +276,21 @@ Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 mv $SCRIPTDIR/Makefile .
 mv $SCRIPTDIR/Doxyfile .
-# Remove files from $FILES variable.
-RemoveFile Makefile
-RemoveFile Doxyfile
-
+RemoveFile Makefile # Remove from $FILES variable.
+RemoveFile Doxyfile # Remove from $FILES variable.
 
 
 
 cd $PREFIX
-
-
 echo "--> Installing libraries."
-
 
 # TODO
 # check for local libs...
 # 	Download, compile, install libs. Auto detect SDL. 
-# 
 #
 
 OS=`uname -s`
 ARCH=`uname -m`
-
 
 InstallSDLLibraries()
 {
@@ -404,12 +385,12 @@ fi
 
 if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
 	cd $INSTALLDIR/$LIBDIR/
-	echo "--> Getting libwinpthread.dll for running MinGW applications."
+	echo "--> Getting libwinpthread.dll for MinGW applications."
 	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
 		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll Windows_x86/
 	fi
 	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
-		echo "--> Getting libwinpthread.dll for running MinGW_64 applications."
+		echo "--> Getting libwinpthread.dll for MinGW_64 applications."
 		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_64/
 	fi
 	cd $PREFIX

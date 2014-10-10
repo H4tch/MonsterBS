@@ -1,25 +1,49 @@
 
-## AVOID MODIFYING THIS FILLE. THIS IS ONLY USED TO DETERMINE OS AND ARCH.
 
 SYSTEM = $(OS)_$(ARCH)
 
-# NOTE: WINDOWS ARCH VALUES CAN BE: AMD64 IA64 x86
-# If we are on Linux cross-compiling to Windows, use Unix tools to find ARCH.
-ifeq ($(ARCH),)
-	ifeq ($(PROCESSOR_ARCHITECTURE),)
-		ARCH := $(shell uname -m)
-	else
-		ARCH := PROCESSOR_ARCHITECTURE
+ifeq ($(PROCESSOR_ARCHITECTURE),)
+	HOST_OS = $(shell uname -s)
+	HOST_ARCH = $(shell uname -m)
+else
+	# NOTE: WINDOWS ARCH VALUES CAN BE: AMD64 IA64 x86
+	ifneq ($(PROCESSOR_ARCHITEW6432),)
+		PROCESSOR_ARCHITECTURE = $(PROCESSOR_ARCHITEW6432)
+	endif
+	HOST_OS = Windows
+	HOST_ARCH := PROCESSOR_ARCHITECTURE
+	ifeq ($(HOST_ARCH),IA64)
+		HOST_ARCH := x86_64
+	else ifeq ($(HOST_ARCH),AMD64)
+		HOST_ARCH := x86_64
 	endif
 endif
 
-# Better architecture detection on Windows.
-ifneq ($(PROCESSOR_ARCHITEW6432),)
-	PROCESSOR_ARCHITECTURE = $(PROCESSOR_ARCHITEW6432)
+
+ifeq ($(OS),)
+	OS := $(HOST_OS)
 endif
 
-# If not on Windows. Use more advanced methods to fixup ARCH.
-ifeq ($(PROCESSOR_ARCHITECTURE),)
+ifeq ($(OS),Windows_NT)
+	OS := Windows
+endif
+
+ifeq ($(OS), Linux)
+else ifeq ($(OS), Darwin)
+	OS = Mac
+else # Unix
+	OS = Linux
+endif
+
+
+ifeq ($(ARCH),)
+	ARCH := $(HOST_ARCH)
+endif
+
+
+# If not on Windows. Use more advanced methods to fixup ARCH using `filter`.
+ifneq ($(HOST_OS),Windows)
+#ifeq ($(PROCESSOR_ARCHITECTURE),)
 	ifneq ($(filter x86_64%,$(ARCH)),)
 		ARCH := x86_64
 	else ifneq ($(filter %86,$(ARCH)),)
@@ -61,27 +85,8 @@ ifeq ($(ARCH),x86_64)
 else ifeq ($(ARCH),x86)
 	BITS = 32
 else ifeq ($(ARCH),arm)
-	#TODO This may need tweaking.
 	BITS = 32
 endif
 #### DONE SETTING UP ARCH ####
-
-
-#### DETECT OS ####
-ifeq ($(OS),)
-	OS := $(shell uname -s)
-endif
-
-ifeq ($(OS),Windows_NT)
-	OS := Windows
-endif
-
-ifeq ($(OS), Linux)
-else ifeq ($(OS), Darwin)
-	OS = Mac
-else ifeq ($(OS), Windows)
-else
-	OS = Linux
-endif
 
 
