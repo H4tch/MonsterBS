@@ -32,7 +32,7 @@ FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
 NEW_PROJECT=0
 if [ ! -d "$INSTALLDIR" ]; then
-	echo "--> Creating New Project " "'$NAME'"
+	echo "--> Creating New Project" "'$NAME'"
 	NEW_PROJECT=1
 	mkdir -p $INSTALLDIR
 else
@@ -73,15 +73,17 @@ if [ $NEW_PROJECT -eq 1 ]; then
 	# Initial Project Files.
 	if [ -d "$PREFIX/Project/" ] && [ "Project" != "$NAME" ]; then
 		echo "--> Copying Project files to new project."
-		# TODO Why is this failing?!?! It works without the asterisk, but doesn't
-		# copy the contents of the directory.
+		# TODO Why is this failing?!?! It works without the asterisk, but
+		# doesn't copy the contents of the directory.
 		cp -a "$PREFIX/Project/*" .
 	fi
-	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$NAME" ]; then
+	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$NAME" ] \
+	&& [ "$SRCDIR" != "." ]; then
 		echo "--> Copying SRC files to new project."
 		cp -a "$PREFIX/$SRCDIR/" .
 	fi
-	if [ -d "$PREFIX/$DATADIR/" ] && [ "$DATADIR" != "$NAME" ]; then
+	if [ -d "$PREFIX/$DATADIR/" ] && [ "$DATADIR" != "$NAME" ] \
+	&& [ "$DATADIR" != "." ]; then
 		echo "--> Copying DATA files to new project."
 		cp -a "$PREFIX/$DATADIR/" .
 	fi
@@ -128,18 +130,20 @@ if [ $BUILD_FOR_ANDROID_X86 -eq 1 ]; then BUILD_FOR_ANDROID=1; fi
 
 
 
+
 echo "--> Removing Unneeded Files."
 
 # Never going to be building the project from a unix os, so remove the scripts
 # that run on these platforms.
 if [ $BUILD_ON_LINUX -eq 0 ] && [ $BUILD_ON_MAC -eq 0 ]; then
-	for FILE in $FILES; do RemoveFile $FILE; done
-	cp -a $SCRIPTS/Makefile $SCRIPTDIR/
-	cp -a $SCRIPTS/Android.mk $SCRIPTDIR/
-	cp -a $SCRIPTS/custom-android.mk $SCRIPTDIR/
-	cp -a $SCRIPTS/Doxyfile $SCRIPTDIR/
-	cp -a $SCRIPTS/LaunchOnWindows.bat $SCRIPTDIR/
-	cp -a $SCRIPTS/Installer.nsh $SCRIPTDIR/
+	true
+	#for FILE in $FILES; do RemoveFile $FILE; done
+	#cp -a $SCRIPTS/Makefile $SCRIPTDIR/
+	#cp -a $SCRIPTS/Android.mk $SCRIPTDIR/
+	#cp -a $SCRIPTS/custom-android.mk $SCRIPTDIR/
+	#cp -a $SCRIPTS/Doxyfile $SCRIPTDIR/
+	#cp -a $SCRIPTS/LaunchOnWindows.bat $SCRIPTDIR/
+	#cp -a $SCRIPTS/Installer.nsh $SCRIPTDIR/
 fi
 
 
@@ -274,11 +278,11 @@ Replace "HIDE_DOC_WITH_SYMBOLS" "$HIDE_DOC_WITH_SYMBOLS"
 Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 
+
 mv $SCRIPTDIR/Makefile .
 mv $SCRIPTDIR/Doxyfile .
 RemoveFile Makefile # Remove from $FILES variable.
 RemoveFile Doxyfile # Remove from $FILES variable.
-
 
 
 cd $PREFIX

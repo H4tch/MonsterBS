@@ -75,16 +75,16 @@ SCRIPTDIR = tools
 
 #### Source files (relative to SRCDIR) ####
 SOURCES = main.cpp
-SOURCES := $(patsubstr %, $(SRCDIR)/%, $(SOURCES))
+SOURCES := $(patsubst %, $(SRCDIR)/%, $(SOURCES))
 
 # MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
 INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR)
 LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L.
 #LIBNAMES = SDL2 SDL2_image
 #LIBDIRS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L.
-#LIBS := $(patsubstr %, -l%, $(LIBNAMES))
+#LIBS := $(patsubst %, -l%, $(LIBNAMES))
 #LIBS := $(LIBNAMES) $(LIBS)
-STATICLIBS = -static-libstdc++ -static-libgCXX
+STATICLIBS = -static-libstdc++ -static-libgcc
 DEFINES =
 CXXFLAGS = -c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 			-fvisibility=hidden -fvisibility-inlines-hidden \
@@ -113,7 +113,7 @@ define WINDOWS_PROFILE
 	LIBS := -lmingw32 $(LIBS)
 	DEFINES := $(DEFINES) -DWINDOWS -DWIN32
 	LIBFLAGS := $(LIBFLAGS) -Wl,-out-implib,lib$(NAME)$(LIBEXT).a
-	# The CXX_PREFIX will probably be different depending on HOST_OS as well.
+	# The CXX_PREFIX should probably be different depending on HOST_OS too.
 	ifeq ($(HOST_ARCH),x86)
 		CXX_PREFIX = i686-w64-mingw32-
 	else ifeq ($(HOST_ARCH),x86_64)
@@ -124,7 +124,7 @@ define WINDOWS_PROFILE
 endef
 
 define LINUX_PROFILE
-	ifeq($(OS), x86)
+	ifeq ($(OS), x86)
 	endif
 	EXT := 
 	LIBEXT := .so
@@ -162,7 +162,7 @@ endef
 
 
 # Determines the platforms you will be building on.
-BUILD_ON_LINUX = 0
+BUILD_ON_LINUX = 1
 BUILD_ON_MAC = 0
 BUILD_ON_WINDOWS = 1
 

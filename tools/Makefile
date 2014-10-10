@@ -70,15 +70,20 @@ DESTDIR = /usr/share/
 include $(SCRIPTDIR)/.platform.mk
 export
 
-define SETUP
 ifneq ($(filter release, $(MAKECMDGOALS)),)
-	$(call RELEASE_PROFILE)
 	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT)
 	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM)
 else
-	$(call DEBUG_PROFILE)
 	OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM).debug$(EXT)
 	OUTPUTDIR = $(BUILDDIR)/$(SYSTEM).debug
+endif
+
+
+define SETUP
+ifneq ($(filter release, $(MAKECMDGOALS)),)
+	$(call RELEASE_PROFILE)
+else
+	$(call DEBUG_PROFILE)
 endif
 
 ifeq ($(OS),Windows)
@@ -99,10 +104,6 @@ endef #SETUP
 
 VPATH += $(SRCDIR)
 
-OUTPUT = $(BUILDDIR)/$(BIN)_$(SYSTEM)$(EXT)
-
-OUTPUTDIR = $(BUILDDIR)/$(SYSTEM)
-
 OBJECTS	:= $(patsubst $(SRCDIR)/%.cpp,$(OUTPUTDIR)/%.o,$(SOURCES))
 
 DEPENDENCIES = $(OBJECTS:.o=.deps)
@@ -113,7 +114,12 @@ $(OUTPUT): $(OBJECTS)
 	$(CXX) $(STATICLIBS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
 	cp $(OUTPUT) $(BIN)$(EXT)
 
+debug: all
+
+release: all
+
 init:
+	$(eval $(call SETUP))
 	@mkdir -p $(OUTPUTDIR)
 	@for SOURCE in $(SOURCES); do \
 		export SRCSUBDIR=`find $$SOURCE -printf '%h\n'`; \
@@ -123,7 +129,6 @@ init:
 		cp -a $(OUTPUTDIR)/$(SRCDIR)/* $(OUTPUTDIR)/; \
 		rm -rd $(OUTPUTDIR)/$(SRCDIR); \
 	fi
-	$(eval $(call SETUP))
 
 # Put init/PRECHECK here.
 $(OBJECTS) : $(OUTPUTDIR)/%.o: $(SRCDIR)/%.cpp
