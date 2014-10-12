@@ -3,34 +3,30 @@
 ## Note: All paths must be relative.
 ##
 
-
 #### Metadata ####
-
 NAME = Project
 NAMESPACE = com.$(NAME).app
 FILENAME = $(NAME)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION =
-# PROJECT_TYPE can be Application, Library, or Framework.
-# 	Application: Include files are not installed. Symbols are hidden by default.
-# 	Library: Include files are installed. Symbols are visible.
-# 	Framework: Contains a collection of sub-projects defined in MODULES.
-PROJECT_TYPE = Application
-# Specify sub-projects if PROJECT_TYPE == Framework
-MODULES = 
 # Unix Desktop Launcher file settings for Application.
 # http://standards.freedesktop.org/menu-spec/latest/apa.html
 CATEGORIES = Game;ActionGame;RolePlaying
 RUN_IN_TERMINAL = false
 # http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#extra-actions
 
-# Install this Cpp Project Generator into the source tree of your project to
-# tweak the install later?
-INSTALL_CPPPROJECTBUILDER = 0
+# PROJECT_TYPE can be Application, Library, or Framework.
+# 	Application: Include files are not installed. Symbols are hidden by default.
+# 	Library: Include files are installed. Symbols are visible by default.
+# 	Framework: Contains a collection of sub-projects defined in MODULES.
+PROJECT_TYPE = Framework
+# Specify the Framework's sub-projects. The order will determine compilation.
+MODULES = 
 
-# If true, unneeded scripts for platforms or libraries that aren't being 
-# targetted will be kept.
+# If true, copies CppProjectBuilder into your project hierarchy.
+INSTALL_CPPPROJECTBUILDER = 0
+# If true, scripts meant for platforms that aren't targetted won't be removed.
 KEEP_UNNEEDED_SCRIPTS = 0
 
 
@@ -38,6 +34,7 @@ KEEP_UNNEEDED_SCRIPTS = 0
 SRCDIR = src
 LIBDIR = lib
 INCLUDEDIR = include
+TESTDIR = test
 BUILDDIR = build
 DOCDIR = doc
 DATADIR = data
@@ -48,10 +45,11 @@ SCRIPTDIR = tools
 #PROJ_INCLUDEDIR =  $(INCLUDEDIR)
 
 
-
 #### Source files (relative to SRCDIR) ####
 SOURCES = main.cpp
 SOURCES := $(patsubst %, $(SRCDIR)/%, $(SOURCES))
+#SOURCES := $(shell find $(SRCDIR) -type f -name *.cpp)
+
 
 # MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
 INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR)
@@ -65,7 +63,7 @@ DEFINES =
 CXXFLAGS = -c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
 			-fvisibility=hidden -fvisibility-inlines-hidden \
 			-ffunction-sections -fdata-sections
-LDFLAGS = -fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath=$$ORIGIN
+LDFLAGS = -fuse-ld=gold -Wl,--gc-sections,-Bdynamic,-rpath=$$ORIGIN/$(LIBDIR)/$(SYSTEM)/
 LIBFLAGS = -export-dynamic -shared
 
 # VPATHS are searched when a file can't be found by MAKE. This is needed when
@@ -168,10 +166,8 @@ PACKAGE_ARCHIVE_TYPE_LINUX = tar.gz
 PACKAGE_ARCHIVE_TYPE_WINDOWS = zip
 
 
-
 #### Documentation Settings ####
 # Customize the Doxyfile for greater control.
-
 DOCSET_NAME = $(NAME) Documentation
 PUBLISHERNAME = $(NAME)
 PUBLISHER_NAMESPACE = $(NAMESPACE)

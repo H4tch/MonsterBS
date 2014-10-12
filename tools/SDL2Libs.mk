@@ -1,3 +1,9 @@
+# Download, build, and install SDL libraries.
+# Make targets:
+# 	Linux, Linux32, Linux64
+# 	Mac, Mac32, Mac64
+# 	MinGW, MinGW32, MinGW64
+
 
 SDL_LIBS=SDL2 SDL2_image SDL2_ttf SDL2_mixer
 SDL_VERSION=2.0
@@ -24,13 +30,13 @@ ifeq ($(CORES),)
 endif
 
 
-all: Linux Mac Windows
+all: Linux Mac MinGW
 
 Linux: Linux32 Linux64
 
 Mac: Mac32 Mac64
 
-Windows: Windows32 Windows64
+MinGW: MinGW32 MinGW64
 
 
 Linux32: run_on_linux #$(SRC_LIBRARIES_32)
@@ -51,16 +57,15 @@ Mac64: run_on_mac $(SRC_LIBRARIES_64)
 	cp -a $(SRC_LIBRARIES_64) $(LIBDIR)/Mac_x86_64/
 
 
-Windows32: $(WIN_FOLDERS)
+MinGW32: $(WIN_FOLDERS)
 	mkdir -p $(LIBDIR)/Windows_x86/
 	-@cp -a -u $(DOWNLOAD_DIR)/*-win/i686-w64-mingw32/bin/*.dll $(LIBDIR)/Windows_x86/ 2> /dev/null
 	-@cp -a -u $(DOWNLOAD_DIR)/*-win/i686-w64-mingw32/bin/LICENSE* $(LIBDIR)/Windows_x86/ 2> /dev/null
 
-Windows64: $(WIN_FOLDERS)
+MinGW64: $(WIN_FOLDERS)
 	mkdir -p $(LIBDIR)/Windows_x86_64/
 	-@cp -a -u $(DOWNLOAD_DIR)/*-win/x86_64-w64-mingw32/bin/*.dll $(LIBDIR)/Windows_x86_64/ 2> /dev/null
 	-@cp -a -u $(DOWNLOAD_DIR)/*-win/x86_64-w64-mingw32/bin/LICENSE* $(LIBDIR)/Windows_x86_64/ 2> /dev/null
-
 
 init:
 	mkdir -p $(DOWNLOAD_DIR)
@@ -140,7 +145,7 @@ $(DOWNLOAD_DIR)/SDL2_ttf-$(SDL_VERSION)-win.tar.gz:
 $(DOWNLOAD_DIR)/SDL2_mixer-$(SDL_VERSION)-win.tar.gz:
 	wget -c http://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.0-mingw.tar.gz -O $@
 
-
+# What is for??
 run_on_linux:
 	OS=`uname -s` && if [ "$$OS" != "Linux" ]; then false; fi 
 
@@ -155,6 +160,5 @@ run_on_mac:
 .PHONY: Windows Windows32 Windows64 
 .PHONY: init
 #.PHONY: setup_build
-
 
 

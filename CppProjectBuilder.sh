@@ -41,6 +41,7 @@ fi
 
 cd $INSTALLDIR
 mkdir -p $SRCDIR
+mkdir -p $INCLUDEDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
@@ -102,7 +103,7 @@ RemoveFile()
 
 # . getBuildSettings.sh
 
-BUILD_FOR_UNIX=0; BUILD_FOR_LINUX=0; BUILD_FOR_MAC=0;  BUILD_FOR_WINDOWS=0;  BUILD_FOR_ANDROID=0
+BUILD_FOR_UNIX=0; BUILD_FOR_LINUX=0; BUILD_FOR_MAC=0; BUILD_FOR_WINDOWS=0; BUILD_FOR_ANDROID=0
 
 if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then
 	BUILD_FOR_UNIX=1; BUILD_FOR_LINUX=1; mkdir -p $LIBDIR/Linux_x86/
@@ -208,7 +209,7 @@ Replace()
 	#echo $SEARCHFOR \""$REPLACEWITH"\"
 	
 	for FILE in $FILES; do
-		cat $SCRIPTDIR/$FILE  | sed s/$SEARCHFOR/"$REPLACEWITH"/g > \
+		cat $SCRIPTDIR/$FILE | sed s/$SEARCHFOR/"$REPLACEWITH"/g > \
 			$SCRIPTDIR/$FILE".new"
 		mv $SCRIPTDIR/$FILE".new" $SCRIPTDIR/$FILE
 	done
@@ -228,10 +229,13 @@ Replace "ICON" "$ICON"
 Replace "DESCRIPTION" "$DESCRIPTION"
 Replace "CATEGORIES" "$CATEGORIES"
 Replace "RUN_IN_TERMINAL" "$RUN_IN_TERMINAL"
+Replace "PROJECT_TYPE" "$PROJECT_TYPE"
+Replace "MODULES" "$MODULES"
 
 Replace "SRCDIR" "$SRCDIR"
 Replace "LIBDIR" "$LIBDIR"
 Replace "INCLUDEDIR" "$INCLUDEDIR"
+Replace "TESTDIR" "$TESTDIR"
 Replace "BUILDDIR" "$BUILDDIR"
 Replace "DOCDIR" "$DOCDIR"
 Replace "DATADIR" "$DATADIR"
@@ -325,10 +329,12 @@ return 0
 BuildAndInstallSDLLibraries()
 {
 	CORES=`grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu`
-	#if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux32; fi
+	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW32; fi
+	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW64; fi
+	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux32; fi
 	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux64; fi
-	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac32; fi
-	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac64; fi
+	if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac32; fi
+	if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac64; fi
 }
 
 
@@ -343,24 +349,11 @@ GetInstalledSDLLibrariesFromSystem()
 }
 
 
-DownloadWindowsMinGWSDLLibraries()
-{
-	if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
-		echo "Should I download and install MinGW SDL2 libraries? y/n"
-		read DOWNLOAD_MINGW_LIBS
-	fi
-	
-	if [ "$DOWNLOAD_MINGW_LIBS" != "y" ]; then return 1; fi
-	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Windows32; fi
-	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Windows64; fi
-}
-
-
 if [ $DEPENDS_SDL2 -eq 1 ]; then
 	echo "--> Your project is using the SDL2 library."
 	InstallSDLLibraries
 	if [ $? -ne 0 ]; then
-		echo "--> Failed to install SDL libs through package manager."
+		echo "--> Couldn't install SDL2 through package manager."
 		echo "--> Would you like to download and compile the SDL libs? y/n"
 		read COMPILE_LIBS
 		if [ "$COMPILE_LIBS" = "y" ]; then
@@ -377,45 +370,109 @@ if [ $DEPENDS_SDL2 -eq 1 ]; then
 	cp -a /usr/lib/i386-linux-gnu/libwebp.so.5* Linux_x86/
 	cp -a /usr/lib/x86_64-linux-gnu/libwebp.so.5* Linux_x86_64/
 	cd $PREFIX
-	DownloadWindowsMinGWSDLLibraries
 fi
 
 
 
 if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
 	cd $INSTALLDIR/$LIBDIR/
-	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
+	if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
 		echo "--> Getting libwinpthread.dll for MinGW applications."
+	fi
+	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
 		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll Windows_x86/
 	fi
 	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
-		echo "--> Getting libwinpthread.dll for MinGW_64 applications."
 		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_64/
 	fi
 	cd $PREFIX
 fi
 
 
-if [ -d "$LIBDIR/" ] && [ "$INSTALLDIR" != "." ]; then
+if [ -d "$LIBDIR/" ] && [ "$LIBDIR" != "." ] && [ "$INSTALLDIR" != "." ]; then
 	echo "--> Copying LIB files to project."
 	cp -a "$LIBDIR/" "$INSTALLDIR/"
 fi
 
 
-if [ "$PROJECT_TYPE" = "Framework" ]; then
-	echo "--> Done installing base project."
-	echo "--> Setting up sub-projects."
-	echo "--> TODO: Generate Project.mk files for each project."
-	for MODULE in $MODULES; do
-		cd $PREFIX/$INSTALLDIR/$SRCDIR
-		if [ -f $PREFIX/$MODULE.mk ]; then
-			make -f $CPPBUILDER_PATH/Makefile $MODULE
-		else
-			echo "--> Failed to find $MODULE.mk"
-		fi
-	done
+
+
+if [ "$PROJECT_TYPE" != "Framework" ]; then exit 0; fi
+
+cd $INSTALLDIR/
+
+# TODO
+# How should documentation generation work?
+# Setup sub-project namespaces.
+# Should the sub-project generation be put into a separate script?
+# Framework-wide include, library, script, and third-party directories.
+# Sub-project's should "install" their output or headers into framework
+#	directories.
+# Setup Framwork-wide tests.
+
+
+echo "$MODULES" | grep "$NAME" > /dev/null
+if [ $? -eq 0 ]; then
+	echo "A Framework's sub-project cannot share the same as the framework."
 fi
 
+rm Makefile
+rm Doxyfile
+
+# Setup Framework's Makefile and SubProject include hierarchy.
+# Include
+#   Project
+#     SubProject
+#       SubProject.h
+#     Project.h
+if [ $NEW_PROJECT -eq 1 ]; then
+	cd $INCLUDEDIR/
+	# Framework's main include file.
+	touch $NAME.h
+	UPPERNAME=$(echo $NAME | tr '[:lower:]' '[:upper:]')
+	echo "#ifndef _"$UPPERNAME"_"$UPPERNAME"_H" >> $NAME.h
+	echo "#define _"$UPPERNAME"_"$UPPERNAME"_H\n" >> $NAME.h
+	for MODULE in $MODULES; do
+		#mkdir -p $NAME/$MODULE
+		#touch $NAME/$MODULE/$MODULE.h
+		echo "#include \"$NAME/$MODULE/$MODULE.h\"" >> $NAME.h
+	done
+	echo "\n#endif //_"$UPPERNAME"_"$UPPERNAME"_H" >> $NAME.h
+	mv $NAME.h $NAME/$NAME.h
+	cd $PREFIX/$INSTALLDIR
+fi
+exit
+
+
+echo "--> Setting up Framework's sub-projects."
+for MODULE in $MODULES; do
+	echo "--> Creating sub-project:" $MODULE
+	
+	mkdir -p $SRCDIR/$MODULE
+	cd $SRCDIR/$MODULE
+	mkdir -p $SRCDIR
+	mkdir -p test
+	mkdir -p $INCLUDEDIR/
+	touch $INCLUDEDIR/$MODULE.h
+	
+	if [ -f $MODULE.mk ]; then # Sub-project already exists.
+		true
+	elif [ -f $PREFIX/$INSTALLDIR/$MODULE.mk ]; then # Sub-project.mk is in root.
+		cp $PREFIX/$INSTALLDIR/$MODULE.mk .
+	elif [ -f $CPPBUILDERPATH/$MODULE.mk ]; then # Sub-project.mk is in the BS dir.
+		cp $CPPBUILDERPATH/$MODULE.mk .
+	else # Generate the Sub-project.mk file from the Framework's makefile.
+		echo "--> Generating $MODULE.mk"
+		cp $PREFIX/$INSTALLDIR/$NAME.mk $MODULE.mk
+		cat $MODULE.mk | sed "s@NAME = $NAME@Name = $MODULE@g" \
+			> $MODULE.mk".new"; mv $MODULE.mk".new" $MODULE.mk
+		cat $MODULE.mk | sed "s@PROJECT_TYPE = Framework@PROJECT_TYPE = Library@g" \
+			> $MODULE.mk".new"; mv $MODULE.mk".new" $MODULE.mk
+	fi
+	# Don't recursively make the sub-projects automatically.
+	#make -f $CPPBUILDERPATH/Makefile $MODULE
+	cd $PREFIX/$INSTALLDIR/
+done
 
 
 
