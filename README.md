@@ -1,8 +1,8 @@
-# CppProjectBuilder
+# MonsterBS
 --------------------
 
-A collection of scripts that make it painless to create, support, and customize
-a C++ project from a single control file.
+The Monster Build System collection of scripts that make it painless to create, support, and 
+customize a C++ project from a single control file.
 
 
 #### Features

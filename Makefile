@@ -1,9 +1,9 @@
 ## Makefile to build the project using the ProjectName.mk file.
 
-CPPBUILDER_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-CPPBUILDER_PATH := $(patsubst $(PWD)/%/,%,$(dir $(CPPBUILDER_PATH)))
-ifeq ($(CPPBUILDER_PATH), $(PWD)/)
-	CPPBUILDER_PATH = .
+MONSTERBS_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MONSTERBS_PATH := $(patsubst $(PWD)/%/,%,$(dir $(MONSTERBS_PATH)))
+ifeq ($(MONSTERBS_PATH), $(PWD)/)
+	MONSTERBS_PATH = .
 endif
 
 PROJECT := $(MAKECMDGOALS)
@@ -14,8 +14,8 @@ export
 all:
 	@echo "Please specify the name of the Project you would like to generate."
 
-$(PROJECT): %: %.mk CppProjectBuilder.sh
-	$(CPPBUILDER_PATH)/CppProjectBuilder.sh
+$(PROJECT): %: %.mk MonsterBS.sh
+	$(MONSTERBS_PATH)/MonsterBS.sh
 	-@ #if [ "$(PROJECT_TYPE)" = "Framework" ]; then \
 	#	$(foreach MODULE, $(MODULES), $(MAKE) $(MODULE); ); \
 	#fi

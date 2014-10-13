@@ -2,9 +2,9 @@
 
 PREFIX=$PWD
 # Get path to where the script is.
-CPPBUILDERPATH=$PWD/`find $0 -printf '%h\n'`
+MONSTERBS_PATH=$PWD/`find $0 -printf '%h\n'`
 # Not sure what this does exactly.
-CPPBUILDERPATH=`echo $CPPBUILDERPATH | sed -e s@\\\./@@g`
+MONSTERBS_PATH=`echo $MONSTERBS_PATH | sed -e s@\\\./@@g`
 
 USAGE="USAGE: $0 [<target-directory>]"
 
@@ -15,19 +15,19 @@ if [ $# -ge 1 ]; then
 fi
 
 
-# NOTE, this prevents you from embedding CppProjectBuilder into your project's
+# NOTE, this prevents you from embedding MonsterBS into your project's
 # root unless you specifically set the target-directory.
 # If I'm running the script from the current directory, the project directory
 # will be created. Otherwise, if the INSTALLDIR is not specified and the
 # SRCDIR shared the same name as the Project's name, then the current
 # directory will be treated as the project directory.
 if [ $# -eq 0 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
- [ -d $INSTALLDIR ] && [ "$CPPBUILDERPATH" != "$PWD/." ]; then
+ [ -d $INSTALLDIR ] && [ "$MONSTERBS_PATH" != "$PWD/." ]; then
 	echo "--> Treating current directory as the Project's root directory."
 	INSTALLDIR="."
 fi
 
-SCRIPTS="$CPPBUILDERPATH/tools"
+SCRIPTS="$MONSTERBS_PATH/tools"
 FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
 
 NEW_PROJECT=0
@@ -45,20 +45,21 @@ mkdir -p $INCLUDEDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
-if [ $INSTALL_CPPPROJECTBUILDER -eq 1 ]; then
-	echo "--> Installing CppProjectBuilder to Project's Script directory."
-	mkdir -p $SCRIPTDIR/CppProjectBuilder/tools
-	cp -a $CPPBUILDERPATH/tools/* $SCRIPTDIR/CppProjectBuilder/tools/
-	cp $CPPBUILDERPATH/Makefile $SCRIPTDIR/CppProjectBuilder/
-	cp $CPPBUILDERPATH/Project.mk $SCRIPTDIR/CppProjectBuilder/
-	cp $CPPBUILDERPATH/CppProjectBuilder.sh $SCRIPTDIR/CppProjectBuilder/
-	cp $CPPBUILDERPATH/README.md $SCRIPTDIR/CppProjectBuilder/
+if [ $INSTALL_MonsterBS -eq 1 ]; then
+	echo "--> Installing MonsterBS to Project's Script directory."
+	cp -a $MONSTERBS_PATH $SCRIPTDIR/
+	#mkdir -p $SCRIPTDIR/MonsterBS/tools
+	#cp -a $MONSTERBS_PATH/tools/* $SCRIPTDIR/MonsterBS/tools/
+	#cp $MONSTERBS_PATH/Makefile $SCRIPTDIR/MonsterBS/
+	#cp $MONSTERBS_PATH/Project.mk $SCRIPTDIR/MonsterBS/
+	#cp $MONSTERBS_PATH/MonsterBS.sh $SCRIPTDIR/MonsterBS/
+	#cp $MONSTERBS_PATH/README.md $SCRIPTDIR/MonsterBS/
 	echo "installed.."
 fi
 
-if [ -f "$CPPBUILDERPATH/$ICON" ]; then
+if [ -f "$MONSTERBS_PATH/$ICON" ]; then
 	echo "--> Copying Icon: '$ICON'."
-	cp $CPPBUILDERPATH/$ICON .
+	cp $MONSTERBS_PATH/$ICON .
 fi
 
 echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
@@ -281,6 +282,12 @@ Replace "HIDE_DOC_WITH_SYMBOLS" "$HIDE_DOC_WITH_SYMBOLS"
 Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 
+if [ "$PROJECT_TYPE" = "Library" ]
+	Replace "DEFAULT_BUILD_RULE" "shared"
+#elif [ "$PROJECT_TYPE" = "Application" ]
+else
+	Replace "DEFAULT_BUILD_RULE" "$(OUTPUT)"
+fi
 
 mv $SCRIPTDIR/Makefile .
 mv $SCRIPTDIR/Doxyfile .
@@ -399,7 +406,7 @@ fi
 
 if [ "$PROJECT_TYPE" != "Framework" ]; then exit 0; fi
 
-cd $INSTALLDIR/
+cd $PREFIX/$INSTALLDIR/
 
 # TODO
 # How should documentation generation work?
@@ -444,6 +451,20 @@ fi
 exit
 
 
+# Find back tracking from Module's root to the Prokect's root directory.
+cd $PREFIX/$INSTALLDIR/$SRCDIR/
+ROOT="../"
+while [ "`ls .`" != "`ls ../`" ]; do
+	cd ../;
+	ROOT=$ROOT"../";
+	if [ "`basename $PWD`" = "$NAME" ]; then
+		break;
+	fi
+done
+if [ "`basename $PWD`" != "$NAME" ]; then ROOT=""; fi
+
+
+
 echo "--> Setting up Framework's sub-projects."
 for MODULE in $MODULES; do
 	echo "--> Creating sub-project:" $MODULE
@@ -459,8 +480,8 @@ for MODULE in $MODULES; do
 		true
 	elif [ -f $PREFIX/$INSTALLDIR/$MODULE.mk ]; then # Sub-project.mk is in root.
 		cp $PREFIX/$INSTALLDIR/$MODULE.mk .
-	elif [ -f $CPPBUILDERPATH/$MODULE.mk ]; then # Sub-project.mk is in the BS dir.
-		cp $CPPBUILDERPATH/$MODULE.mk .
+	elif [ -f $MONSTERBS_PATH/$MODULE.mk ]; then # Sub-project.mk is in the BS dir.
+		cp $MONSTERBS_PATH/$MODULE.mk .
 	else # Generate the Sub-project.mk file from the Framework's makefile.
 		echo "--> Generating $MODULE.mk"
 		cp $PREFIX/$INSTALLDIR/$NAME.mk $MODULE.mk
@@ -470,7 +491,7 @@ for MODULE in $MODULES; do
 			> $MODULE.mk".new"; mv $MODULE.mk".new" $MODULE.mk
 	fi
 	# Don't recursively make the sub-projects automatically.
-	#make -f $CPPBUILDERPATH/Makefile $MODULE
+	#make -f $MONSTERBS_PATH/Makefile $MODULE
 	cd $PREFIX/$INSTALLDIR/
 done
 

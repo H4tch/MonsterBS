@@ -5,8 +5,8 @@
 
 #### Metadata ####
 NAME = Project
-NAMESPACE = com.$(NAME).app
-FILENAME = $(NAME)
+NAMESPACE := com.$(NAME).app
+FILENAME := $(echo $(NAME) | tr A-Z a-z)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION =
@@ -24,8 +24,8 @@ PROJECT_TYPE = Framework
 # Specify the Framework's sub-projects. The order will determine compilation.
 MODULES = 
 
-# If true, copies CppProjectBuilder into your project hierarchy.
-INSTALL_CPPPROJECTBUILDER = 0
+# If true, copies MONSTERBS into your project hierarchy.
+INSTALL_MONSTERBS = 0
 # If true, scripts meant for platforms that aren't targetted won't be removed.
 KEEP_UNNEEDED_SCRIPTS = 0
 
@@ -45,15 +45,12 @@ SCRIPTDIR = tools
 #PROJ_INCLUDEDIR =  $(INCLUDEDIR)
 
 
-#### Source files (relative to SRCDIR) ####
-SOURCES = main.cpp
-SOURCES := $(patsubst %, $(SRCDIR)/%, $(SOURCES))
-#SOURCES := $(shell find $(SRCDIR) -type f -name *.cpp)
-
+#### Source files are retrieved from SRCDIR automatically.
+SOURCES := $(shell find $(SRCDIR) -type f -name "*.cpp")
 
 # MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
-INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR)
-LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L.
+INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR) -I../../$(INCLUDEDIR)/
+LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L../../$(LIBDIR)/$(SYSTEM) -L.
 #LIBNAMES = SDL2 SDL2_image
 #LIBDIRS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L.
 #LIBS := $(patsubst %, -l%, $(LIBNAMES))
@@ -88,6 +85,7 @@ endef
 define WINDOWS_PROFILE
 	EXT := .exe
 	LIBEXT := .dll
+	LIBEXTSTATIC := .lib
 	LIBS := -lmingw32 $(LIBS)
 	DEFINES := $(DEFINES) -DWINDOWS -DWIN32
 	LIBFLAGS := $(LIBFLAGS) -Wl,-out-implib,lib$(NAME)$(LIBEXT).a
@@ -106,6 +104,7 @@ define LINUX_PROFILE
 	endif
 	EXT := 
 	LIBEXT := .so
+	LIBEXTSTATIC := .a
 	LIBS := $(LIBS) -ldl
 	DEFINES := $(DEFINES) -DLINUX
 	LIBFLAGS := $(LIBFLAGS) -Wl,-soname,lib$(NAME)$(LIBEXT)
@@ -116,6 +115,7 @@ endef
 define MAC_PROFILE
 	EXT := 
 	LIBEXT := .dylib
+	LIBEXTSTATIC := .a
 	LIBS := $(LIBS) -ldl
 	DEFINES := $(DEFINES) -DOSX
 	LIBFLAGS := $(LIBFLAGS) -dynamiclib -Wl,-dylib-install_name,lib$(NAME)$(LIBEXT)
