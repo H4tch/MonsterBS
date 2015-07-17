@@ -25,3 +25,6 @@ $(FILES):
 
 .PHONY: all
 
+print-%: ; @echo $*=$($*)
+
+

@@ -21,31 +21,31 @@ RUN_IN_TERMINAL = false
 # 	Library: Include files are installed. Symbols are visible by default.
 # 	Framework: Contains a collection of sub-projects defined in MODULES.
 PROJECT_TYPE = Framework
-# Specify the Framework's sub-projects. The order will determine compilation.
+# Specify the Framework's sub-projects. The order determines compilation.
 MODULES = 
 
-# If true, copies MONSTERBS into your project hierarchy.
+# Should MonsterBs be installed into your generated Project.
 INSTALL_MONSTERBS = 0
-# If true, scripts meant for platforms that aren't targetted won't be removed.
+# Whether Scripts for non-target platforms should be installed into your Project
 KEEP_UNNEEDED_SCRIPTS = 0
 
 
 #### Directories ####
-SRCDIR = src
-LIBDIR = lib
-INCLUDEDIR = include
-TESTDIR = test
-BUILDDIR = build
-DOCDIR = doc
-DATADIR = data
-THIRDPARTYDIR = third_party
-SCRIPTDIR = tools
+SRCDIR 			= src
+LIBDIR 			= lib
+INCLUDEDIR 		= include
+TESTDIR 		= test
+BUILDDIR 		= build
+DOCDIR 			= doc
+DATADIR 		= data
+THIRDPARTYDIR 	= third_party
+SCRIPTDIR 		= tools
 # Framework wide installation directories of libs and includes.
 #PLATFORM_LIBDIR = $(LIBDIR)/$(OS)"_"$(ARCH)
 #PROJ_INCLUDEDIR =  $(INCLUDEDIR)
 
 
-#### Source files are retrieved from SRCDIR automatically.
+#### Source files are retrieved from SRCDIR automatically
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.cpp")
 
 # MingW32, automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
@@ -53,8 +53,6 @@ INCLUDES = -I$(INCLUDEDIR) -I$(SRCDIR) -I$(THIRDPARTYDIR) -I../../$(INCLUDEDIR)/
 LIBS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L../../$(LIBDIR)/$(SYSTEM) -L.
 #LIBNAMES = SDL2 SDL2_image
 #LIBDIRS = -L$(LIBDIR)/$(SYSTEM) -L$(THIRDPARTYDIR) -L.
-#LIBS := $(patsubst %, -l%, $(LIBNAMES))
-#LIBS := $(LIBNAMES) $(LIBS)
 STATICLIBS = -static-libstdc++ -static-libgcc
 DEFINES =
 CXXFLAGS = -c -fPIC -std=c++11 -Wall -pedantic -pthread -frtti -fexceptions \
@@ -82,32 +80,35 @@ define DEBUG_PROFILE
 endef
 
 
+
+## NOTE: These functions are not able to reference variables defined in their scope
+
 define WINDOWS_PROFILE
 	EXT := .exe
 	LIBEXT := .dll
 	LIBEXTSTATIC := .lib
 	LIBS := -lmingw32 $(LIBS)
 	DEFINES := $(DEFINES) -DWINDOWS -DWIN32
-	LIBFLAGS := $(LIBFLAGS) -Wl,-out-implib,lib$(NAME)$(LIBEXT).a
+	LIBFLAGS := $(LIBFLAGS) -Wl,-out-implib,lib$(NAME).dll.a
 	# The CXX_PREFIX should probably be different depending on HOST_OS too.
 	ifeq ($(HOST_ARCH),x86)
-		CXX_PREFIX = i686-w64-mingw32-
+		CXX = i686-w64-mingw32-g++
+		AR = i686-w64-mingw32-ar
 	else ifeq ($(HOST_ARCH),x86_64)
-		CXX_PREFIX = x86_64-w64-mingw32-
+		CXX = x86_64-w64-mingw32-g++
+		AR = x86_64-w64-mingw32-ar
 	endif
-	CXX = $(CXX_PREFIX)g++
-	AR = $(CXX_PREFIX)ar
 endef
 
 define LINUX_PROFILE
 	ifeq ($(OS), x86)
 	endif
 	EXT := 
-	LIBEXT := .so
+	LIBEXT = .so
 	LIBEXTSTATIC := .a
 	LIBS := $(LIBS) -ldl
 	DEFINES := $(DEFINES) -DLINUX
-	LIBFLAGS := $(LIBFLAGS) -Wl,-soname,lib$(NAME)$(LIBEXT)
+	LIBFLAGS := $(LIBFLAGS) -Wl,-soname,lib$(NAME).so
 	CXX = g++
 	AR = ar
 endef
@@ -118,10 +119,11 @@ define MAC_PROFILE
 	LIBEXTSTATIC := .a
 	LIBS := $(LIBS) -ldl
 	DEFINES := $(DEFINES) -DOSX
-	LIBFLAGS := $(LIBFLAGS) -dynamiclib -Wl,-dylib-install_name,lib$(NAME)$(LIBEXT)
+	LIBFLAGS := $(LIBFLAGS) -dynamiclib -Wl,-dylib-install_name,lib$(NAME).dylib
 	CXX = g++
 	AR = ar
 endef
+
 
 
 define X86_PROFILE
@@ -151,7 +153,7 @@ BUILD_FOR_MAC_32 = 0
 BUILD_FOR_MAC_64 = 0
 BUILD_FOR_WINDOWS_32 = 1
 BUILD_FOR_WINDOWS_64 = 1
-# Not supported.
+# (Not implemented)
 BUILD_FOR_ANDROID_ARM = 0
 BUILD_FOR_ANDROID_X86 = 0
 
@@ -166,15 +168,15 @@ PACKAGE_ARCHIVE_TYPE_LINUX = tar.gz
 PACKAGE_ARCHIVE_TYPE_WINDOWS = zip
 
 
-#### Documentation Settings ####
+#### Shortcut to some Doxygen Settings ####
 # Customize the Doxyfile for greater control.
 DOCSET_NAME = $(NAME) Documentation
 PUBLISHERNAME = $(NAME)
 PUBLISHER_NAMESPACE = $(NAMESPACE)
-# Don't document source from these paths.
+# Don't document source files with these paths.
 HIDE_DOC_WITHIN_PATHS =
-# Don't document source files that match the patterns.
-# Ex Pattern: "*/test/*"
+# Don't document source files that match these patterns.
+# Ex: Pattern: "*/test/*"
 HIDE_DOC_WITH_PATTERNS =
 # Hide part of the user's include path from the docs.
 # Ex: Turn "src/Lib/lib.h" into "/Lib/lib.h"

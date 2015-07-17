@@ -242,3 +242,5 @@ project:
 .PHONY: all debug release shared static package dist install uninstall \
 		init clean distclean cleanAll docs project
 
+
+print-%: ; @echo $*=$($*)
