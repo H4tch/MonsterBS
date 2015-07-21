@@ -25,6 +25,7 @@ $(FILES):
 
 .PHONY: all
 
+# Allows you to `make print-VARIABLE`
 print-%: ; @echo $*=$($*)
 
 

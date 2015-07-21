@@ -1,9 +1,9 @@
 # MonsterBS
 --------------------
 
-The Monster Build System collection of scripts that make it painless to create,
-customize, and manage a C++ project from a single control file. It is built
-on top of Make and Shell scripts.
+The Monster Build System is a collection of scripts that make it painless to
+create, customize, and manage a C++ project from a single control file.
+It is built on top of Make and Shell scripts.
 
 
 ### Features
@@ -45,5 +45,21 @@ targets. Settings for a specific target are added by the '*_PROFILE' functions.
 * This will generate your Project into a folder named after your Project.
 
 
-#### Created by Dan H4tch 2014
+## Implementation Overview
+Your Project's main `Project.mk` file contains all variable definitions needed
+to customize the Project's scripts and Makefile. When `make project` is executed
+the Makefile includes all of the `Project.mk` variables, then executes\
+`MonsterBS.sh`. This script will create your Project's folder hierarchy, and
+copy over relevant scripts from the `tools` directory. The script will then
+go through all of the copied files, and replace instances of `$$VARIABLE_NAME`
+with the value set within the Project definition file. (Additions or Removals
+of `Project.mk` variables need to be reflected manually within the script.)
+
+When you compile your Project with `make`, it will include some of your
+Project's settings. However, most scripts won't do this, changes to their
+variables in `Project.mk` won't be reflected until you regenerate your project
+with MonsterBS.
+
+
+#### Created by Dan H4tch 2014-2015
 

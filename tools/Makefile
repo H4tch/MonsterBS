@@ -232,8 +232,7 @@ distclean:
 	-@rm -r $(BUILDDIR) > /dev/null 2>&1
 
 docs:
-	mkdir -p $(DOCDIR)
-	(cat Doxyfile ; echo INPUT="$$PWD/$(SRCDIR)") | doxygen -
+	cat Doxyfile | doxygen -
 
 project:
 	@$(MAKE) -f $(SCRIPTDIR)/MonsterBS/Makefile $(NAME)
@@ -243,4 +242,6 @@ project:
 		init clean distclean cleanAll docs project
 
 
+# 'make print-VARIABLE'
 print-%: ; @echo $*=$($*)
+

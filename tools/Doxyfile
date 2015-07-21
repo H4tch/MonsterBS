@@ -551,7 +551,7 @@ GENERATE_BUGLIST       = YES
 # disable (NO) the deprecated list. This list is created by putting 
 # \deprecated commands in the documentation.
 
-GENERATE_DEPRECATEDLIST= NO
+GENERATE_DEPRECATEDLIST= YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional 
 # documentation sections, marked by \if section-label ... \endif 
@@ -677,7 +677,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT = $$NAME $$SRCDIR $$INCLUDEDIR
+INPUT = $$SRCDIR $$INCLUDEDIR $$TESTDIR
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
@@ -697,6 +697,7 @@ INPUT_ENCODING         = UTF-8
 
 FILE_PATTERNS          = *.c \
                          *.cc \
+                         *.cpp \
                          *.cxx \
                          *.c++ \
                          *.d \

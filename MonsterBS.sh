@@ -222,6 +222,7 @@ echo "--> Inserting Project variables into project files."
 
 # Note, the order for some of these matter.
 # Example, replacing NAME before NAMESPACE invalidate all NAMESPACE instances.
+Replace "MONSTERBS_PATH" "$MONSTERBS_PATH"
 Replace "NAMESPACE" "$NAMESPACE"
 Replace "NAME" "$NAME"
 Replace "FILENAME" "$FILENAME"
