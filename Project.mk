@@ -6,7 +6,7 @@
 #### Metadata ####
 NAME = Project
 NAMESPACE := com.$(NAME).app
-FILENAME := $(echo $(NAME) | tr A-Z a-z)
+FILENAME := $(shell echo $(NAME) | tr A-Z a-z)
 VERSION = 1.0
 ICON = icon.png
 DESCRIPTION =

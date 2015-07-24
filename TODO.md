@@ -47,4 +47,9 @@
 * `DESTDIR = /usr/share/`
 
 
+### MonsterBS Script
+* SDL Installer Script
+	* Should ask you if you want to install it
+	* If yes, choose from a list of options (apt, source, system)
+
 

@@ -45,7 +45,7 @@ mkdir -p $INCLUDEDIR
 mkdir -p $LIBDIR
 mkdir -p $SCRIPTDIR
 
-if [ $INSTALL_MonsterBS -eq 1 ]; then
+if [ $INSTALL_MONSTERBS -eq 1 ]; then
 	echo "--> Installing MonsterBS to Project's Script directory."
 	cp -a $MONSTERBS_PATH $SCRIPTDIR/
 	#mkdir -p $SCRIPTDIR/MonsterBS/tools
@@ -186,7 +186,7 @@ if [ "$PROJECT_TYPE" != "Framework" ]; then true; fi
 
 
 DEPENDS_SDL2=0
-echo "$LIBS $STATICLIBS $LINUXLIBS $LINUXSTATICLIBS $WINLIBS $WINSTATICLIBS" | grep "\-lSDL2 "
+echo "$LIBS $STATICLIBS $LINUXLIBS $LINUXSTATICLIBS $WINLIBS $WINSTATICLIBS" | grep "\-lSDL2 "  > /dev/null 2>&1
 if [ $? -eq 0 ]; then
 	DEPENDS_SDL2=1
 else
@@ -283,11 +283,11 @@ Replace "HIDE_DOC_WITH_SYMBOLS" "$HIDE_DOC_WITH_SYMBOLS"
 Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 
-if [ "$PROJECT_TYPE" = "Library" ]
+if [ "$PROJECT_TYPE" = "Library" ]; then
 	Replace "DEFAULT_BUILD_RULE" "shared"
 #elif [ "$PROJECT_TYPE" = "Application" ]
 else
-	Replace "DEFAULT_BUILD_RULE" "$(OUTPUT)"
+	Replace "DEFAULT_BUILD_RULE" "\$(OUTPUT)"
 fi
 
 mv $SCRIPTDIR/Makefile .
@@ -312,7 +312,7 @@ if [ "$OS" = "Linux" ]; then
 	cat "/etc/lsb-release" | grep "Ubuntu" > /dev/null
 	if [ $? -eq 0 ]; then DEBIAN=1; fi
 	if [ $DEBIAN -eq 1 ]; then
-		echo "--> Would you like to install using the package manager? y/n "
+		echo "--> Would you like to install SDL2 using the 'apt' package manager? y/n "
 		read INSTALL_PACKAGE
 		if [ "$INSTALL_PACKAGE" = "y" ]; then
 			for LIB in $LIBS; do
