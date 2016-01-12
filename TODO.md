@@ -1,30 +1,41 @@
 
 # Todo
 
-### Project.mk
-* Ability to make all `Project.mk` files within the current directory?
-* Improved `Framework` support
-	* Mechanism to allow a Framework to override Variables
-		* Use fallbacks when setting variables 'VAR=${VAR:-"new value"}'
-	* Support for `Standalone` `Modules`
-	* Ability for Framework's `Makefile` to generate `Module` projects
-	* Add `make module` for each Module of a Framework within Framework's Makefile
-	* Support for shared Makefiles, Scripts, Lib installation, etc across Modules
-* Improved `Module` support
-	* Automated `Api`, `Test`, and Dynamic Module compilation
-	* Automated testing
-	* Inter-Module dependency Support (Only for Modules within Frameworks?)
-* More `RELEASE` build options
-	* `-fconserve-space` (saves space in the exe)
-	* `-fvisibility=hidden -fvisibility-inlines-hidden`
-* More Built Targets
-	* Clang compiler (compatible with GCC cli options?)
-	* Emscriptem
-* [Windows NSIS](http://nsis.sourceforge.net/) installer setup
+For each source file: make source -> SOURCE_PROFILE { defines, flags, etc }
+For each dependency, add lib directory, include directory, ...
 
+### Misc
+* Hooks for running custom scripts during project generation and build time
+* More Release build options
+	* `-fconserve-space` (saves space in the exe)
+	* `-fvisibility=hidden -fvisibility-inlines-hidden` (hide everything that isn't exposed)
+* More Build Targets and Multiple Compiler Suites Support
+	* Emscriptem, Android, IOS
+* DEFINES, LIBNAMES, LIBDIRS, etc
+	* Don't append compiler specific command arguments on definition
+
+
+### Framework Support
+* Combined Documentation Generation (Integration with Hugo Plus?)
+	* Build list of directories to include for all modules
+	* Or link to external docs:
+		* http://www.stack.nl/~dimitri/doxygen/manual/external.html
+* Ability to create a Module project within a Framework (clone MBS/Module.mk?)
+* Allow every Project to be a Framework?
+* NAMESPACE = com.$(FRAMEWORK).$(NAME)
+
+
+### Module Support
+* MK File for Modules generated from Framework.mk settings
+* Module compilation infrastructure - `Api`, `Test`, and `module_init`
+
+BIN_EXT, SHARED_EXT, STATIC_EXT
 
 ### Makefile
+* Move PROFILE_BASE settings into the Makefile?
+* COMPILER profiles - GCC, MINGW, CLANG, EMSCRIPTEN
 * Improve 'make project' to regenerate a Project's Makefile
+* Improve Release build settings
 * Doxygen - LAYOUT_FILE?
 * [Installation Variables](http://www.gnu.org/software/make/manual/make.html#Directory-Variables)
 	* DESTDIR
@@ -39,17 +50,46 @@
 	* Target needs `build/$(SYSTEM).release` as a dependency 
 
 
-### Install Scripts
+### MonsterBS Script
+* SDL Installer Script
+	* Install from a list of options (apt, source, system)
+
+### Android
+* Manually compile programs, don't use the `Ant` build system
+
+
+### OSX
+* Change the install name of compiled third_party library
+	* `install_name_tool -id lib/Mac_x86_64/$(FILENAME) $(FILENAME)`
+* DYLD_LIBRARY_PATH
+* install_name_tool
+	* -install_name=@rpath/
+	* -id "@loader_path/.."
+	* --library-path
+* OSX `pkg` or `app` generation
+* Mac i386 support with `-m i368`?
+* OSX Relative Library Path
+	* https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/dyld.1.html
+	* `RPATH` environment variable
+	* @loader_path/../Library/OpenSource # Relative to ~/Applications folder
+	* > gcc -dynamiclib blah.o -install_name @rpath/t/libblah.dylib -o libblah.dylib
+		> mkdir t ; mv libblah.dylib t/
+		> $ gcc main.c -lblah -L`pwd`/t -Xlinker -rpath -Xlinker `pwd`
+
+
+### Windows/MingW
+* Automatic visiblity: -no-undefined and --enable-runtime-pseudo-reloc
+* Need x64, ia32?
+* [Windows NSIS](http://nsis.sourceforge.net/) installer setup
+* Windows SetDLLDirectory (Desktop Only Function)
+	* Only works when using `LoadLibrary`
+
+
+### Install Setup
+* Customized per Build Profile?
 * `SHELL = /bin/sh`
 * `INSTALL = install`
 * `INSTALL_PROGRAM = INSTALL`
 * `INSTALL_DATA = $(INSTALL) -m 644`
 * `DESTDIR = /usr/share/`
-
-
-### MonsterBS Script
-* SDL Installer Script
-	* Should ask you if you want to install it
-	* If yes, choose from a list of options (apt, source, system)
-
 

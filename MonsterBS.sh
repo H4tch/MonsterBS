@@ -1,214 +1,134 @@
 #!/bin/sh
+##
+## Monster Build System  -  https://www.github.com/h4tch/MonsterBS
+## MIT Licensed 2014-2015
+## Created by: Daniel Hatch <h4tch.github.com>
+##
+## Project Generation Script.
+## Creates Project directories and generates files from `PROJECT.mk` settings.
+## Cannot be called directory, use `make PROJECT` instead.
+##
 
 PREFIX=$PWD
-# Get path to where the script is.
-MONSTERBS_PATH=$PWD/`find $0 -printf '%h\n'`
-# Not sure what this does exactly.
-MONSTERBS_PATH=`echo $MONSTERBS_PATH | sed -e s@\\\./@@g`
-
-USAGE="USAGE: $0 [<target-directory>]"
-
+MONSTERBS_PATH=`dirname $0`
+FILES=""
+SCRIPTDIR=tools
 INSTALLDIR=$NAME
-if [ $# -ge 1 ]; then
-	echo "Installing to" $1
-	INSTALLDIR=$1
-fi
 
-
-# NOTE, this prevents you from embedding MonsterBS into your project's
-# root unless you specifically set the target-directory.
-# If I'm running the script from the current directory, the project directory
-# will be created. Otherwise, if the INSTALLDIR is not specified and the
-# SRCDIR shared the same name as the Project's name, then the current
-# directory will be treated as the project directory.
-if [ $# -eq 0 ] && [ "$SRCDIR" = "$INSTALLDIR" ] &&
- [ -d $INSTALLDIR ] && [ "$MONSTERBS_PATH" != "$PWD/." ]; then
+## Detect if the Project already exists or the current directory is the Project.
+NEW_PROJECT=0
+if [ "`basename $PWD`" = "$NAME" ] && [ "$MONSTERBS_PATH" != "$PWD" ]; then
 	echo "--> Treating current directory as the Project's root directory."
 	INSTALLDIR="."
-fi
-
-SCRIPTS="$MONSTERBS_PATH/tools"
-FILES=`find $SCRIPTS/ -maxdepth 1 -type f -printf '%f '`
-
-NEW_PROJECT=0
-if [ ! -d "$INSTALLDIR" ]; then
-	echo "--> Creating New Project" "'$NAME'"
-	NEW_PROJECT=1
-	mkdir -p $INSTALLDIR
+	echo "--> Building Project" "'$NAME'"
 else
-	echo "--> Creating Project" "'$NAME'"
+	if [ ! -d "$INSTALLDIR" ]; then
+		echo "--> Building New Project" "'$NAME'"
+		NEW_PROJECT=1
+		mkdir -p $INSTALLDIR
+	fi
 fi
 
+STANDALONE=0
+if [ -z "$FRAMEWORK" ]; then STANDALONE=1; fi
+if [ $STANDALONE -eq 1 ]; then echo "Treating Project as Standalone"; fi
+
+### Begine installation
 cd $INSTALLDIR
-mkdir -p $SRCDIR
-mkdir -p $INCLUDEDIR
-mkdir -p $LIBDIR
-mkdir -p $SCRIPTDIR
+mkdir -p $SRCDIR $INCLUDEDIR $LIBDIR $TESTDIR $SCRIPTDIR
 
-if [ $INSTALL_MONSTERBS -eq 1 ]; then
-	echo "--> Installing MonsterBS to Project's Script directory."
-	cp -a $MONSTERBS_PATH $SCRIPTDIR/
-	#mkdir -p $SCRIPTDIR/MonsterBS/tools
-	#cp -a $MONSTERBS_PATH/tools/* $SCRIPTDIR/MonsterBS/tools/
-	#cp $MONSTERBS_PATH/Makefile $SCRIPTDIR/MonsterBS/
-	#cp $MONSTERBS_PATH/Project.mk $SCRIPTDIR/MonsterBS/
-	#cp $MONSTERBS_PATH/MonsterBS.sh $SCRIPTDIR/MonsterBS/
-	#cp $MONSTERBS_PATH/README.md $SCRIPTDIR/MonsterBS/
-	echo "installed.."
-fi
-
-if [ -f "$MONSTERBS_PATH/$ICON" ]; then
-	echo "--> Copying Icon: '$ICON'."
-	cp $MONSTERBS_PATH/$ICON .
-fi
-
-echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
-
-cp $PREFIX/$NAME.mk .
-
-for FILE in $FILES; do
-	cp -a $SCRIPTS/$FILE $SCRIPTDIR/
+# Detect OS and ARCH Build Targets.
+for Platform in $TARGET_PLATFORMS; do
+	PLATFORM=`echo $Platform | tr a-z A-Z`
+	PLATFORM_ARCHS=$PLATFORM"_ARCHS"
+	for Arch in ${!PLATFORM_ARCHS}; do
+		mkdir -p $LIBDIR/$Platform"_"$Arch
+		ARCH=`echo $Arch | tr a-z A-Z`
+		TARGET_OS_ARCH="TARGET_"$PLATFORM"_"$ARCH
+		export ${TARGET_OS_ARCH}=1
+	done
 done
 
 
-if [ $NEW_PROJECT -eq 1 ]; then
-	# Initial Project Files.
-	if [ -d "$PREFIX/Project/" ] && [ "Project" != "$NAME" ]; then
-		echo "--> Copying Project files to new project."
-		# TODO Why is this failing?!?! It works without the asterisk, but
-		# doesn't copy the contents of the directory.
-		cp -a "$PREFIX/Project/*" .
-	fi
-	if [ -d "$PREFIX/$SRCDIR/" ] && [ "$SRCDIR" != "$NAME" ] \
-	&& [ "$SRCDIR" != "." ]; then
-		echo "--> Copying SRC files to new project."
-		cp -a "$PREFIX/$SRCDIR/" .
-	fi
-	if [ -d "$PREFIX/$DATADIR/" ] && [ "$DATADIR" != "$NAME" ] \
-	&& [ "$DATADIR" != "." ]; then
-		echo "--> Copying DATA files to new project."
-		cp -a "$PREFIX/$DATADIR/" .
-	fi
-fi
+#if [ $INSTALL_MONSTERBS -eq 1 ]; then
+#	echo "--> Installing MonsterBS to Project's Script directory."
+#	cp -a $MONSTERBS_PATH $SCRIPTDIR/
+#	echo "installed.."
+#	MONSTERBS_PATH=$SCRIPTDIR/MonsterBS/
+#fi
 
-
-RemoveFile()
-{
-	if [ $# -lt 1 ]; then exit 1; fi
-	if [ "$KEEP_UNNEEDED_SCRIPTS" -eq 1 ]; then exit 0; fi
-	rm $SCRIPTDIR/$1 > /dev/null 2>&1
-	# TODO Match _$1_
-	FILES=`echo $FILES | sed -e "s/$1/ /g"`
+InstallFile() {
+	if [ $# -lt 1 ]; then
+		echo "Invalid arguments to InstallFile() function";
+		exit 1;
+	fi
+	FILES="$FILES $1"
+	cp -a "$MONSTERBS_PATH/tools"/$1 $SCRIPTDIR/
 }
 
+echo "--> Copying scripts to" $INSTALLDIR/$SCRIPTDIR
+cp $PREFIX/$NAME.mk .
 
-# . getBuildSettings.sh
-
-BUILD_FOR_UNIX=0; BUILD_FOR_LINUX=0; BUILD_FOR_MAC=0; BUILD_FOR_WINDOWS=0; BUILD_FOR_ANDROID=0
-
-if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then
-	BUILD_FOR_UNIX=1; BUILD_FOR_LINUX=1; mkdir -p $LIBDIR/Linux_x86/
-fi
-if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then
-	BUILD_FOR_UNIX=1; BUILD_FOR_LINUX=1; mkdir -p $LIBDIR/Linux_x86_64/
-fi
-
-if [ $BUILD_FOR_MAC_32 -eq 1 ]; then
-	BUILD_FOR_UNIX=1; BUILD_FOR_MAC=1; mkdir -p $LIBDIR/Mac_x86/
-fi
-if [ $BUILD_FOR_MAC_64 -eq 1 ]; then
-	BUILD_FOR_UNIX=1; BUILD_FOR_MAC=1; mkdir -p $LIBDIR/Mac_x86_64/
-fi
-
-if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
-	BUILD_FOR_WINDOWS=1; mkdir -p $LIBDIR/Windows_x86/
-fi
-if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
-	BUILD_FOR_WINDOWS=1; mkdir -p $LIBDIR/Windows_x86_64/
-fi
-
-if [ $BUILD_FOR_ANDROID_ARM -eq 1 ]; then BUILD_FOR_ANDROID=1; fi
-if [ $BUILD_FOR_ANDROID_X86 -eq 1 ]; then BUILD_FOR_ANDROID=1; fi
+InstallFile Makefile
+InstallFile ProjectMakefile
+InstallFile Doxyfile
 
 
+if [ $STANDALONE -eq 1 ]; then
+	echo $TARGET_PLATFORMS | grep "Linux"  > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		InstallFile LaunchOnLinux.sh
+		InstallFile GenerateLinuxLauncher.sh
+		InstallFile CompileGlewForMingW.sh
+		TARGET_LINUX=1
+	fi
+
+	echo $TARGET_PLATFORMS | grep "Mac"  > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		#InstallFile LaunchOnMac.sh
+		#InstallFile GenerateMacLauncher.sh
+		TARGET_MAC=1
+	fi
 
 
-echo "--> Removing Unneeded Files."
+	echo $TARGET_PLATFORMS | grep "Windows"  > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		InstallFile LaunchOnWindows.bat
+		InstallFile Installer.nsh
+		TARGET_WINDOWS=1
+	fi
 
-# Never going to be building the project from a unix os, so remove the scripts
-# that run on these platforms.
-if [ $BUILD_ON_LINUX -eq 0 ] && [ $BUILD_ON_MAC -eq 0 ]; then
-	true
-	#for FILE in $FILES; do RemoveFile $FILE; done
-	#cp -a $SCRIPTS/Makefile $SCRIPTDIR/
-	#cp -a $SCRIPTS/Android.mk $SCRIPTDIR/
-	#cp -a $SCRIPTS/custom-android.mk $SCRIPTDIR/
-	#cp -a $SCRIPTS/Doxyfile $SCRIPTDIR/
-	#cp -a $SCRIPTS/LaunchOnWindows.bat $SCRIPTDIR/
-	#cp -a $SCRIPTS/Installer.nsh $SCRIPTDIR/
-fi
+	echo $TARGET_PLATFORMS | grep "Android"  > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		InstallFile Android.mk
+		InstallFile AndroidBuildAPK.sh
+		InstallFile AndroidProject.sh
+		InstallFile AndroidStandalone.mk
+		InstallFile Application.mk
+		InstallFile SetupAndroidProject.sh
+		TARGET_ANDROID=1
+	fi
 
-
-if [ $BUILD_FOR_UNIX -eq 0 ]; then
-	RemoveFile LaunchOnLinux.sh
-	RemoveFile Get_SDL2_LinuxLibs.sh
-	RemoveFile GenerateLinuxLauncher.sh
-	RemoveFile CompileGlewForMingW.sh
-fi
-
-if [ $BUILD_FOR_LINUX -eq 0 ]; then
-	RemoveFile Fix_Ubuntu_SDL2_32-bit_Libs.sh
-fi
-
-if [ $BUILD_FOR_MAC -eq 0 ]; then true; fi
-
-if [ $BUILD_FOR_WINDOWS -eq 0 ]; then
-	RemoveFile LaunchOnWindows.bat
-	RemoveFile Installer.nsh
-	RemoveFile Get_SDL2_WinLibs.sh
-fi
-
-if [ $BUILD_FOR_ANDROID -eq 0 ]; then
-	RemoveFile Android.mk
-	RemoveFile Application.mk
-	RemoveFile Makefile.Android
-	RemoveFile SetupAndroidProject.sh
-fi
-
-if [ "$PROJECT_TYPE" != "Application" ]; then
-	RemoveFile LaunchOnLinux.sh
-	RemoveFile LaunchOnWindows.bat
-	RemoveFile Installer.nsh
-	RemoveFile GenerateLinuxLauncher.sh
-fi
-
-if [ "$PROJECT_TYPE" != "Framework" ]; then true; fi
-
-
-DEPENDS_SDL2=0
-echo "$LIBS $STATICLIBS $LINUXLIBS $LINUXSTATICLIBS $WINLIBS $WINSTATICLIBS" | grep "\-lSDL2 "  > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-	DEPENDS_SDL2=1
-else
-	RemoveFile SDL2Libs.mk
-	RemoveFile Fix_Ubuntu_SDL2_32-bit_Libs.sh
+	echo "$LIBS $STATICLIBS" | grep "\-lSDL2 "  > /dev/null 2>&1
+	if [ $? -eq 0 ]; then DEPENDS_SDL2=1; InstallFile SDL2Libs.mk; fi
 fi
 
 
 
-Replace()
-{
+echo "--> Inserting Project variables into project files."
+
+Replace() {
 	if [ $# -lt 1 ]; then exit 1; fi
 	if [ $# -lt 2 ];
 		then REPLACEWITH=""
 	fi
-	
 	SEARCHFOR="\$\$$1"
 	#SEARCHFOR=`echo $1 | sed -e 's/\\$/\\\\$/g'`
 	REPLACEWITH=`echo $2 | sed -e 's/\\\/\\\\\\\\\\\\/g' -e 's/&/\\\&/g' \
 								-e 's/\\//\\\\\//g'`
 	#echo $SEARCHFOR \""$REPLACEWITH"\"
-	
+	#echo "SCRIPTDIR: " $SCRIPTDIR/
+
 	for FILE in $FILES; do
 		cat $SCRIPTDIR/$FILE | sed s/$SEARCHFOR/"$REPLACEWITH"/g > \
 			$SCRIPTDIR/$FILE".new"
@@ -216,9 +136,6 @@ Replace()
 	done
 }
 
-
-
-echo "--> Inserting Project variables into project files."
 
 # Note, the order for some of these matter.
 # Example, replacing NAME before NAMESPACE invalidate all NAMESPACE instances.
@@ -242,7 +159,7 @@ Replace "BUILDDIR" "$BUILDDIR"
 Replace "DOCDIR" "$DOCDIR"
 Replace "DATADIR" "$DATADIR"
 Replace "THIRDPARTYDIR" "$THIRDPARTYDIR"
-Replace "SCRIPTDIR" "$SCRIPTDIR"
+#Replace "SCRIPTDIR" "$SCRIPTDIR"
 #Replace "PLATFORM_LIBDIR" "$PLATFORM_LIBDIR"
 #Replace "PROJ_INCLUDEDIR" "$PROJ_INCLUDEDIR"
 
@@ -259,19 +176,13 @@ Replace "LDFLAGS" "$LDFLAGS"
 Replace "LIBFLAGS" "$LIBFLAGS" # Don't move this up.
 Replace "BINFLAGS" "$BINFLAGS"
 
-Replace "BUILD_ON_LINUX" "$BUILD_ON_LINUX"
-Replace "BUILD_ON_MAC" "$BUILD_ON_MAC"
-Replace "BUILD_ON_WINDOWS" "$BUILD_ON_WINDOWS"
-Replace "BUILD_FOR_LINUX_32" "$BUILD_FOR_LINUX_32"
-Replace "BUILD_FOR_LINUX_64" "$BUILD_FOR_LINUX_64"
-Replace "BUILD_FOR_WINDOWS_32" "$BUILD_FOR_WINDOWS_32"
-Replace "BUILD_FOR_WINDOWS_64" "$BUILD_FOR_WINDOWS_64"
-Replace "BUILD_FOR_ANDROID_ARM" "$BUILD_FOR_ANDROID_ARM"
-Replace "BUILD_FOR_ANDROID_X86" "$BUILD_FOR_ANDROID_X86"
-
-#Replace "PACKAGE_ALL_IN_ONE" $PACKAGE_ALL_IN_ONE"
-Replace "PACKAGE_ARCHIVE_TYPE_LINUX" "$PACKAGE_ARCHIVE_TYPE_LINUX"
-Replace "PACKAGE_ARCHIVE_TYPE_WINDOWS" "$PACKAGE_ARCHIVE_TYPE_WINDOWS"
+Replace "" "$"
+Replace "TARGET_LINUX_X86" "$TARGET_LINUX_X86"
+Replace "TARGET_LINUX_X86_64" "$TARGET_LINUX_X86_64"
+Replace "TARGET_WINDOWS_X86" "$TARGET_WINDOWS_X86"
+Replace "TARGET_WINDOWS_X86_64" "$TARGET_WINDOWS_X86_64"
+Replace "TARGET_ANDROID_ARM" "$TARGET_ANDROID_ARM"
+Replace "TARGET_ANDROID_X86" "$TARGET_ANDROID_X86"
 
 Replace "DOCSET_NAME" "$DOCSET_NAME"
 Replace "PUBLISHERNAME" "$PUBLISHERNAME"
@@ -285,20 +196,46 @@ Replace "DOC_IMAGE_DIR" "$DOC_IMAGE_DIR"
 
 if [ "$PROJECT_TYPE" = "Library" ]; then
 	Replace "DEFAULT_BUILD_RULE" "shared"
-#elif [ "$PROJECT_TYPE" = "Application" ]
-else
+	mv $SCRIPTDIR/Makefile .
+	rm $SCRIPTDIR/ProjectMakefile
+elif [ "$PROJECT_TYPE" = "Application" ]; then
 	Replace "DEFAULT_BUILD_RULE" "\$(OUTPUT)"
+	mv $SCRIPTDIR/Makefile .
+	rm $SCRIPTDIR/ProjectMakefile
+elif [ "$PROJECT_TYPE" = "Framework" ]; then
+	mv $SCRIPTDIR/ProjectMakefile MakeFile
+	rm $SCRIPTDIR/Makefile
 fi
 
-mv $SCRIPTDIR/Makefile .
 mv $SCRIPTDIR/Doxyfile .
-RemoveFile Makefile # Remove from $FILES variable.
-RemoveFile Doxyfile # Remove from $FILES variable.
+#RemoveFile Doxyfile
+#RemoveFile Makefile
+#RemoveFile ProjectMakefile
+if [ $STANDALONE -eq 0 ]; then rmdir $SCRIPTDIR; fi
+
+echo "--> Removing Unneeded Files."
+
+RemoveFile()
+{
+	if [ $# -lt 1 ]; then
+		echo "Invalid arguments to RemoveFile() function";
+		exit 1;
+	fi
+	FILES=`echo $FILES | sed -e "s@$1@ @g"`
+	rm $SCRIPTDIR/$1 > /dev/null 2>&1
+}
+
+if [ "$PROJECT_TYPE" != "Application" ]; then
+	RemoveFile LaunchOnLinux.sh
+	RemoveFile GenerateLinuxLauncher.sh
+	RemoveFile LaunchOnWindows.bat
+	RemoveFile Installer.nsh
+	RemoveFile Release.sh
+fi
 
 
 cd $PREFIX
 echo "--> Installing libraries."
-
 
 OS=`uname -s`
 ARCH=`uname -m`
@@ -320,8 +257,8 @@ if [ "$OS" = "Linux" ]; then
 				if [ $? -eq 0 ]; then continue; fi
 				LIB=`echo $LIB | sed -e 's/-l/lib/g' -e 's/_/\-/g'`
 				sudo apt-get install $LIB-*
-				if [ $ARCH = "x86_64" ]; then
-					if [ $BUILD_FOR_LINUX_32 ]; then
+				if [ $ARCH = "x86_X86_64" ]; then
+					if [ $TARGET_LINUX_X86 ]; then
 						# Need better regex matching here...
 						sudo apt-get install $LIB-*:i386
 					fi
@@ -337,22 +274,21 @@ return 0
 BuildAndInstallSDLLibraries()
 {
 	CORES=`grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu`
-	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW32; fi
-	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW64; fi
-	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux32; fi
-	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux64; fi
-	if [ $BUILD_FOR_MAC_32 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac32; fi
-	if [ $BUILD_FOR_MAC_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac64; fi
+	if [ $TARGET_WINDOWS_X86 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW32; fi
+	if [ $TARGET_WINDOWS_X86_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk MinGW64; fi
+	if [ $TARGET_LINUX_X86 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux32; fi
+	if [ $TARGET_LINUX_X86_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Linux64; fi
+	if [ $TARGET_MAC_X86 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac32; fi
+	if [ $TARGET_MAC_X86_64 -eq 1 ]; then make -j$CORES -f $INSTALLDIR/$SCRIPTDIR/SDL2Libs.mk Mac64; fi
 }
 
 
 GetInstalledSDLLibrariesFromSystem()
 {
 	cd $INSTALLDIR/$LIBDIR
-	if [ $BUILD_FOR_LINUX_32 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2* Linux_x86/; fi
-	if [ $BUILD_FOR_LINUX_64 -eq 1 ]; then cp -a /usr/lib/x86_64-linux-gnu/libSDL2* Linux_x86_64/; fi
-	#if [ $BUILD_FOR_MAC_32 -eq 1 ]; then cp -a /Library/; fi
-	#if [ $BUILD_FOR_MAC_64 -eq 1 ]; then cp -a /Library/; fi
+	if [ $TARGET_LINUX_X86 -eq 1 ]; then cp -a /usr/lib/i386-linux-gnu/libSDL2* Linux_x86/; fi
+	if [ $TARGET_LINUX_X86_64 -eq 1 ]; then cp -a /usr/lib/x86_X86_64-linux-gnu/libSDL2* Linux_x86_X86_64/; fi
+	if [ $TARGET_MAC -eq 1 ]; then cp -a ls /usr/local/lib/libSDL2* Mac_x86_X86_64/; fi
 	cd $PREFIX
 }
 
@@ -376,22 +312,22 @@ if [ $DEPENDS_SDL2 -eq 1 ]; then
 	fi
 	cd $INSTALLDIR/$LIBDIR/
 	cp -a /usr/lib/i386-linux-gnu/libwebp.so.5* Linux_x86/
-	cp -a /usr/lib/x86_64-linux-gnu/libwebp.so.5* Linux_x86_64/
+	cp -a /usr/lib/x86_X86_64-linux-gnu/libwebp.so.5* Linux_x86_X86_64/
 	cd $PREFIX
 fi
 
 
 
-if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
+if [ $TARGET_WINDOWS -eq 1 ] && [ "$OS" = "Linux" ]; then
 	cd $INSTALLDIR/$LIBDIR/
-	if [ $BUILD_FOR_WINDOWS -eq 1 ]; then
+	if [ $TARGET_WINDOWS -eq 1 ]; then
 		echo "--> Getting libwinpthread.dll for MinGW applications."
 	fi
-	if [ $BUILD_FOR_WINDOWS_32 -eq 1 ]; then
+	if [ $TARGET_WINDOWS_X86 -eq 1 ]; then
 		cp -a /usr/i686-w64-mingw32/lib/libwinpthread-1.dll Windows_x86/
 	fi
-	if [ $BUILD_FOR_WINDOWS_64 -eq 1 ]; then
-		cp -a /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_64/
+	if [ $TARGET_WINDOWS_X86_64 -eq 1 ]; then
+		cp -a /usr/x86_X86_64-w64-mingw32/lib/libwinpthread-1.dll Windows_x86_X86_64/
 	fi
 	cd $PREFIX
 fi
@@ -406,12 +342,15 @@ fi
 
 
 if [ "$PROJECT_TYPE" != "Framework" ]; then exit 0; fi
+if [ "$MODULES" = "" ]; then exit 0; fi
+
+echo "Setting up $NAME Framework"
 
 cd $PREFIX/$INSTALLDIR/
 
 # TODO
-# How should documentation generation work?
-# Setup sub-project namespaces.
+# Combined Documentation Generation
+# Module Namespaces.
 # Should the sub-project generation be put into a separate script?
 # Framework-wide include, library, script, and third-party directories.
 # Sub-project's should "install" their output or headers into framework
@@ -421,11 +360,11 @@ cd $PREFIX/$INSTALLDIR/
 
 echo "$MODULES" | grep "$NAME" > /dev/null
 if [ $? -eq 0 ]; then
-	echo "A Framework's sub-project cannot share the same as the framework."
+	echo "A Framework's sub-project cannot have the same as the framework."
 fi
 
-rm Makefile
-rm Doxyfile
+#rm Makefile
+#rm Doxyfile
 
 # Setup Framework's Makefile and SubProject include hierarchy.
 # Include
@@ -446,13 +385,13 @@ if [ $NEW_PROJECT -eq 1 ]; then
 		echo "#include \"$NAME/$MODULE/$MODULE.h\"" >> $NAME.h
 	done
 	echo "\n#endif //_"$UPPERNAME"_"$UPPERNAME"_H" >> $NAME.h
-	mv $NAME.h $NAME/$NAME.h
 	cd $PREFIX/$INSTALLDIR
 fi
 exit
 
 
-# Find back tracking from Module's root to the Prokect's root directory.
+# Back track from Module's root to the Framework's root directory to determine
+# relative path.
 cd $PREFIX/$INSTALLDIR/$SRCDIR/
 ROOT="../"
 while [ "`ls .`" != "`ls ../`" ]; do
@@ -472,11 +411,8 @@ for MODULE in $MODULES; do
 	
 	mkdir -p $SRCDIR/$MODULE
 	cd $SRCDIR/$MODULE
-	mkdir -p $SRCDIR
-	mkdir -p test
-	mkdir -p $INCLUDEDIR/
+	mkdir -p $SRCDIR $INCLUDEDIR $LIBDIR $TESTDIR
 	touch $INCLUDEDIR/$MODULE.h
-	
 	if [ -f $MODULE.mk ]; then # Sub-project already exists.
 		true
 	elif [ -f $PREFIX/$INSTALLDIR/$MODULE.mk ]; then # Sub-project.mk is in root.

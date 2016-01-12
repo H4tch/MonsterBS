@@ -1,0 +1,70 @@
+##  Monster Build System  -  https://www.github.com/h4tch/MonsterBS
+##  MIT Licensed 2014-2016
+##  Created by: Daniel Hatch <h4tch.github.com>
+##
+## Framework Project Makefile.
+## Builds and manages each Module of the Framework.
+##
+
+include $$NAME.mk 
+export
+
+MODULES = `find $(SRCDIR) -name Makefile -type f -depth 2 -exec dirname {} \;`
+#MODULES = $$MODULES
+#MODULES := $(patsubst src/%,%,$(MODULES))
+
+
+all: #$(MODULES)
+	echo $(MODULES)
+
+$(MODULES):
+	$(MAKE) -C $@
+
+submake:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE $(MAKECMDGOALS); done
+
+init: submake
+	@#for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE init; done
+
+debug: submake
+	@#for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE debug; done
+
+release:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE release; done
+
+shared:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE shared; done
+
+static:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE static; done
+
+package:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE package; done
+
+dist:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE dist; done
+
+install:
+	@for MODULE in $(MODULES); do  $(MAKE) -C src/$$MODULE install; done
+
+uninstall:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE uninstall; done
+
+clean:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE clean; done
+
+distclean:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE distclean; done
+
+cleanAll:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE cleanAll; done
+
+docs:
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE docs; done
+
+project:
+	@$(MAKE) -f $(MONSTERBS_PATH)/Makefile $(NAME)
+	@for MODULE in $(MODULES); do $(MAKE) -C src/$$MODULE project; done
+
+.PHONY: all $(MODULES) submake init debug release shared static package dist \
+	install uninstall clean distclean cleanAll docs project

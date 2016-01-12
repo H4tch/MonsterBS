@@ -1,7 +1,7 @@
-OUTPUT=hello-ndk
+OUTPUT=$$NAME
 
 #Change your NDK root path
-NDK=/home/dan/Downloads/Apps/Google/android-ndk-r7
+NDK=~/Apps/Android/ndk
 
 SYSROOT=$(NDK)/platforms/android-8/arch-arm
 NDKINCLUDE=$(SYSROOT)/usr/include

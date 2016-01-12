@@ -1,5 +1,6 @@
 # Download, build, and install SDL libraries.
 # Make targets:
+#   Ubuntu-Fix
 # 	Linux, Linux32, Linux64
 # 	Mac, Mac32, Mac64
 # 	MinGW, MinGW32, MinGW64
@@ -48,7 +49,7 @@ Linux64: run_on_linux $(SRC_LIBRARIES_64)
 	cp -a $(SRC_LIBRARIES_64) $(LIBDIR)/Linux_x86_64/
 
 
-Mac32: run_on_mac $(SDL_LIBRARIES_32)
+Mac32: run_on_mac $(SRC_LIBRARIES_32)
 	mkdir -p lib/Mac_x86/
 	cp -a $(SRC_LIBRARIES_32) $(LIBDIR)/Mac_x86/
 
@@ -145,7 +146,7 @@ $(DOWNLOAD_DIR)/SDL2_ttf-$(SDL_VERSION)-win.tar.gz:
 $(DOWNLOAD_DIR)/SDL2_mixer-$(SDL_VERSION)-win.tar.gz:
 	wget -c http://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.0-mingw.tar.gz -O $@
 
-# What is for??
+
 run_on_linux:
 	OS=`uname -s` && if [ "$$OS" != "Linux" ]; then false; fi 
 
@@ -154,11 +155,39 @@ run_on_mac:
 	OS=`uname -s` && if [ "$$OS" != "Darwin" ]; then false; fi 
 
 
-.PHONY: all
-.PHONY: Linux Linux32 Linux64
-.PHONY: Mac Mac32 Mac64
-.PHONY: Windows Windows32 Windows64 
-.PHONY: init
-#.PHONY: setup_build
 
+Ubuntu-Fix: run_on_linux
+	echo "Adding symbolic links to your /lib/i386-linux-gnu/"
+	cd /usr/lib/i386-linux-gnu/
+	if test $? -ne 0
+		then echo "Couldn't find '/usr/lib/i386-linux-gnu/' directory."
+		exit 1
+	fi
+	sudo ln -s libSDL2-2.0.so.0 libSDL2.so
+	sudo ln -s libSDL2_image-2.0.so.0 libSDL2_image.so
+	sudo ln -s libSDL2_ttf-2.0.so.0 libSDL2_ttf.so
+	sudo ln -s libSDL2_mixer-2.0.so.0 libSDL2_mixer.so
+	cd mesa
+	if test $? -eq 0
+		cd ../
+		sudo ln -s mesa/libGL.so.1 mesa/libGL.so
+		sudo ln -s mesa/libGL.so.1 libGL.so
+		exit 0
+	fi
+	cd nvidia*
+	if test $? -eq 0
+		sudo ln -s nvidia*/libGL.so libGL.so
+		exit 0
+	fi
+	cd fglr*
+	if test $? -eq 0
+		sudo ln -s fglr*/libGL.so libGL.so
+		exit 0
+	fi
+	echo "Couldn't find OpenGL library(Mesa, Nvidia, or Fglrx) to fix."
+	exit 1
+
+
+
+.PHONY: all init Ubuntu-Fix Linux Linux32 Linux64 Mac Mac32 Mac64 Windows Windows32 Windows64 
 

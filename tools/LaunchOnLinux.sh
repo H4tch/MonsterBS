@@ -25,7 +25,7 @@ esac
 export LD_LIBRARY_PATH="$PWD/$$LIBDIR/$OS"_"$ARCH/":$LD_LIBRARY_PATH && \
 	./$$FILENAME"_"$OS"_"$ARCH
 
-#export LD_LIBRARY_PATH="$PWD/$$LIBDIR/$OS"_"$ARCH/":$LD_LIBRARY_PATH && \
-#	./$$LIBDIR/$OS"_"$ARCH/$$FILENAME
-
+# Switch to a Bin directory for each Platform?
+#export LD_LIBRARY_PATH="$PWD/$$BINDIR/$OS"_"$ARCH/":$LD_LIBRARY_PATH && \
+#	./$$BINDIR/$OS"_"$ARCH/$$FILENAME
 

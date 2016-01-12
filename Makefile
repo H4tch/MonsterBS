@@ -1,31 +1,36 @@
-## Makefile to build the project using the ProjectName.mk file.
+## Monster Build System  -  https://www.github.com/h4tch/MonsterBS
+## MIT Licensed 2014-2015
+## Created by: Daniel Hatch <h4tch.github.com>
+##
+## MonsterBS Project Generation Makefile.
+## Executes `MonsterBS.sh` and builds your project from your 'PROJECT.mk' file.
+## Copy `Project.mk` and name it to your PROJECT_NAME.
+## Customize its settings to configure your project.
+## Type `make PROJECT_NAME` to generate your project.
+##
 
-MONSTERBS_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-MONSTERBS_PATH := $(patsubst $(PWD)/%/,%,$(dir $(MONSTERBS_PATH)))
-ifeq ($(MONSTERBS_PATH), $(PWD)/)
-	MONSTERBS_PATH = .
-endif
+MONSTERBS_PATH := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 PROJECT := $(MAKECMDGOALS)
+ifeq ($(PROJECT),Project)
+	-include Project.mk
+	export
+endif
+
 -include $(PROJECT).mk
 export
 
 
 all:
+	@echo $(MONSTERBS_PATH)
 	@echo "Please specify the name of the Project you would like to generate."
 
-$(PROJECT): %: %.mk MonsterBS.sh
+$(PROJECT): %: %.mk $(MONSTERBS_PATH)/MonsterBS.sh
 	$(MONSTERBS_PATH)/MonsterBS.sh
-	-@ #if [ "$(PROJECT_TYPE)" = "Framework" ]; then \
-	#	$(foreach MODULE, $(MODULES), $(MAKE) $(MODULE); ); \
-	#fi
 
-$(FILES):
-	echo "File: $@"
+$(MONSTERBS_PATH)/MonsterBS.sh:
+	
 
 .PHONY: all
-
 # Allows you to `make print-VARIABLE`
 print-%: ; @echo $*=$($*)
-
-
